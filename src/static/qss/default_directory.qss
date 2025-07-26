@@ -1,0 +1,99 @@
+defaultDirectoryDialog {
+    background-color: #f5f5f5;
+    border: 1px solid #d3d3d3;
+    border-radius: 4px;
+}
+
+defaultDirectoryFrame {
+    background-color: #ffffff;
+    border: 1px solid #d3d3d3;
+    border-radius: 4px;
+}
+
+defaultDirectoryDialog#dialogTitleLabel,
+defaultDirectoryFrame#dialogTitleLabel {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 5px;
+    background: transparent;
+    border: none;
+}
+
+defaultDirectoryDialog QLabel#fieldLabel,
+defaultDirectoryFrame QLabel#fieldLabel {
+    font-size: 12px;
+    color: #333333;
+    background: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+defaultDirectoryDialog QLineEdit#textEntry,
+defaultDirectoryFrame QLineEdit#textEntry {
+    font-size: 12px;
+    min-height: 28px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #ffffff;
+}
+
+defaultDirectoryDialog QLineEdit#textEntry[readOnly="true"],
+defaultDirectoryFrame QLineEdit#textEntry[readOnly="true"] {
+    background-color: #f0f0f0;
+    border: 1px solid #d3d3d3;
+}
+
+defaultDirectoryDialog QLabel#textEntry,
+defaultDirectoryFrame QLabel#textEntry {
+    font-size: 12px;
+    min-height: 28px;
+    padding: 5px;
+    background-color: #f0f0f0;
+    border: 1px solid #d3d3d3;
+    border-radius: 4px;
+}
+
+defaultDirectoryDialog QPushButton#actionButton,
+defaultDirectoryFrame QPushButton#actionButton {
+    font-size: 12px;
+    min-height: 28px;
+    border: none;
+    border-radius: 4px;
+    background-color: #0078d7;
+    color: #ffffff;
+    padding: 5px 10px;
+}
+
+defaultDirectoryDialog QPushButton#actionButton:hover,
+defaultDirectoryFrame QPushButton#actionButton:hover {
+    background-color: #005bb5;
+}
+
+defaultDirectoryDialog QPushButton#actionButton:pressed,
+defaultDirectoryFrame QPushButton#actionButton:pressed {
+    background-color: #003087;
+}
+
+defaultDirectoryDialog QPushButton#confirmButton,
+defaultDirectoryFrame QPushButton#confirmButton {
+    font-size: 12px;
+    min-height: 28px;
+    border: 1px solid #4caf50;
+    border-radius: 4px;
+    background-color: #4caf50;
+    color: #ffffff;
+    padding: 5px 10px;
+}
+
+defaultDirectoryDialog QPushButton#confirmButton:hover,
+defaultDirectoryFrame QPushButton#confirmButton:hover {
+    background-color: #45a049;
+}
+
+defaultDirectoryDialog QPushButton#confirmButton:pressed,
+defaultDirectoryFrame QPushButton#confirmButton:pressed {
+    background-color: #3d8b40;
+}

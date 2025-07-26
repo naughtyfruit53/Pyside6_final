@@ -1,0 +1,10 @@
+2025-07-13 22:27:24,980 - src.logic.user_management_logic - ERROR - Error during logout: name 'QWidget' is not defined
+2025-07-13 23:16:46,973 - src.core.app - ERROR - Failed to show frame home: cannot access local variable 'has_submenu' where it is not associated with a value
+2025-07-13 23:25:57,442 - src.logic.user_management_logic - ERROR - Invalid login attempt for username: husainkm
+2025-07-13 23:25:58,998 - src.logic.user_management_logic - ERROR - Failed login attempt for username: husainkm
+2025-07-14 22:09:34,575 - src.logic.user_management_logic - ERROR - Invalid login attempt for username: husainkm
+2025-07-14 22:09:37,893 - src.logic.user_management_logic - ERROR - Failed login attempt for username: husainkm
+2025-07-14 23:18:31,694 - src.core.app - ERROR - Stylesheet not found: home.qss
+2025-07-14 23:18:31,708 - src.core.app - ERROR - Stylesheet not found: navigation.qss
+2025-07-14 23:24:15,277 - src.logic.database.voucher - ERROR - Voucher type code or name '5' not found. Available types: [('Purchase Voucher', 'purchase_voucher'), ('GRN (Goods Receipt Note)', 'grn'), ('Debit Note', 'debit_note'), ('Rejection In/Out', 'rejection_in_out'), ('Purchase Order', 'purchase_order'), ('Sales Voucher', 'sales_voucher'), ('Proforma Invoice', 'proforma_invoice'), ('Delivery Challan', 'delivery_challan'), ('Credit Note', 'credit_note'), ('Non-Sales Credit Note', 'non_sales_credit_note'), ('Sales Order', 'sales_order'), ('Quotation', 'quotation'), ('Payment Voucher', 'payment_voucher'), ('Receipt Voucher', 'receipt_voucher'), ('Contra Voucher', 'contra_voucher'), ('Journal Voucher', 'journal_voucher')]
+2025-07-14 23:24:15,277 - src.logic.database.voucher - ERROR - Invalid voucher type code: 5

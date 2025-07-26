@@ -1,0 +1,56 @@
+#titleLabel {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+    padding: 10px;
+}
+
+#dialogTitleLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333333;
+    padding: 20px;
+}
+
+#customerTable {
+    font-size: 12px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+
+#customerTable::item {
+    padding: 5px;
+}
+
+#actionButton {
+    font-size: 12px;
+    padding: 5px 10px;
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+#actionButton:hover {
+    background-color: #005bb5;
+}
+
+#fieldLabel {
+    font-size: 12px;
+    color: #555555;
+    padding: 5px;
+}
+
+#textEntry {
+    font-size: 12px;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+}
+
+#stateCombo {
+    font-size: 12px;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+}

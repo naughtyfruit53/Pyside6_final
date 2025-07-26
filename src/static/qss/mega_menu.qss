@@ -1,0 +1,44 @@
+/* mega_menu.qss */
+
+QFrame#megaMenu {
+    background-color: #0078d4 !important;
+    border: none !important;
+}
+
+QFrame#megaMenu QFrame#tabFrame {
+    background-color: transparent !important;
+    border: none !important;
+}
+
+QFrame#megaMenu QLabel#tabLabel {
+    color: #000000;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 15px;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+QFrame#megaMenu QLabel#tabLabel:hover {
+    background-color: #005bb5 !important;
+    color: #ffffff;
+}
+
+QMenu#dropdownMenu {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #d3d3d3;
+    border-radius: 0px;
+    padding: 0px;
+}
+
+QMenu#dropdownMenu::item {
+    padding: 8px 16px;
+    color: #333333;
+    background-color: transparent;
+}
+
+QMenu#dropdownMenu::item:selected {
+    background-color: #0078d4;
+    color: #ffffff;
+}

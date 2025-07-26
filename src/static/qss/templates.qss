@@ -1,0 +1,47 @@
+QDialog {
+    background-color: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+QLabel {
+    font-size: 14px;
+    color: #333;
+}
+
+QComboBox {
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+QComboBox:hover {
+    border: 1px solid #0078d4;
+}
+
+QPushButton#generateButton {
+    background-color: #0078d4;
+    color: white;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+QPushButton#generateButton:hover {
+    background-color: #005ea6;
+}
+
+QPushButton {
+    background-color: #e0e0e0;
+    color: #333;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+QPushButton:hover {
+    background-color: #d0d0d0;
+}

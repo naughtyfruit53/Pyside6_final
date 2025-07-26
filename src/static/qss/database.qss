@@ -1,0 +1,54 @@
+/* Styling for database-related UI components */
+QFrame#databaseFrame {
+    background-color: #FFFFFF;
+    border: none;
+}
+
+/* Styling for database reset confirmation dialog */
+QDialog#databaseResetDialog {
+    background-color: #F5F5F5;
+    border: 1px solid #D3D3D3;
+    border-radius: 4px;
+}
+
+/* Styling for warning labels in database dialogs */
+QLabel#warningLabel {
+    color: #D32F2F;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Styling for confirmation buttons */
+QPushButton#confirmButton, QPushButton#cancelButton {
+    background-color: #4CAF50;
+    color: #FFFFFF;
+    border: 1px solid #4CAF50;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+}
+
+QPushButton#confirmButton:hover, QPushButton#cancelButton:hover {
+    background-color: #45A049;
+    border: 1px solid #45A049;
+}
+
+QPushButton#confirmButton:pressed, QPushButton#cancelButton:pressed {
+    background-color: #3D8B40;
+}
+
+QPushButton#cancelButton {
+    background-color: #D32F2F;
+    border: 1px solid #D32F2F;
+}
+
+QPushButton#cancelButton:hover {
+    background-color: #C62828;
+    border: 1px solid #C62828;
+}
+
+QPushButton#cancelButton:pressed {
+    background-color: #B71C1C;
+}

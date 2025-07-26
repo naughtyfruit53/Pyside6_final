@@ -1,0 +1,97 @@
+#titleLabel {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+    padding: 10px;
+}
+
+#userTable {
+    font-size: 12px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+
+#userTable::item {
+    padding: 5px;
+}
+
+#actionButton {
+    font-size: 12px;
+    padding: 5px 10px;
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+#actionButton:hover {
+    background-color: #005bb5;
+}
+
+#dialogTitleLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333333;
+    padding: 20px;
+}
+
+#textEntry {
+    font-size: 14px;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+}
+
+#stateCombo {
+    font-size: 14px;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+}
+
+#moduleCheckbox {
+    font-size: 14px;
+    padding: 5px;
+}
+
+#logoPathEntry {
+    font-size: 14px;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+}
+
+#saveButton {
+    font-size: 12px;
+    padding: 5px 10px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+#saveButton:hover {
+    background-color: #45a049;
+}
+
+#cancelButton {
+    font-size: 12px;
+    padding: 5px 10px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+#cancelButton:hover {
+    background-color: #c62828;
+}
+
+#fieldLabel {
+    font-size: 12px;
+    font-weight: bold;
+    color: #333333;
+}

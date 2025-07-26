@@ -1,0 +1,117 @@
+src/
+│   ├── run.py
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── app.py
+│   │   ├── config.py
+│   │   ├── frames.py
+│   │   ├── navigation.py
+│   │   ├── _init_.py
+│   ├── crm/
+│   │   ├── __init__.py
+│   ├── erp/
+│   │   ├── _init_.py
+│   │   ├── logic/
+│   │   │   ├── backup_restore.py
+│   │   │   ├── company_details_logic.py
+│   │   │   ├── customers_logic.py
+│   │   │   ├── default_directory.py
+│   │   │   ├── manufacturing_logic.py
+│   │   │   ├── pdf_generator_logic.py
+│   │   │   ├── pending_logic.py
+│   │   │   ├── products_logic.py
+│   │   │   ├── stock_logic.py
+│   │   │   ├── user_management_logic.py
+│   │   │   ├── vendors_logic.py
+│   │   │   ├── _init_.py
+│   │   │   ├── database/
+│   │   │   │   ├── db_utils.py
+│   │   │   │   ├── models.py
+│   │   │   │   ├── schema.py
+│   │   │   │   ├── voucher.py
+│   │   │   │   ├── __init__.py
+│   │   │   ├── utils/
+│   │   │   │   ├── document_utils.py
+│   │   │   │   ├── navigation_utils.py
+│   │   │   │   ├── products_utils.py
+│   │   │   │   ├── sequence_utils.py
+│   │   │   │   ├── utils.py
+│   │   │   │   ├── voucher_utils.py
+│   │   │   │   ├── _init_.py
+│   │   ├── ui/
+│   │   │   ├── backup_restore_ui.py
+│   │   │   ├── company_details_ui.py
+│   │   │   ├── customers_ui.py
+│   │   │   ├── default_directory_ui.py
+│   │   │   ├── manufacturing_ui.py
+│   │   │   ├── pending_ui.py
+│   │   │   ├── products_ui.py
+│   │   │   ├── stock_ui.py
+│   │   │   ├── user_management_ui.py
+│   │   │   ├── vendors_ui.py
+│   │   │   ├── _init_.py
+│   │   │   ├── utils/
+│   │   │   │   ├── utils_ui.py
+│   │   │   │   ├── voucher_utils_ui.py
+│   │   │   │   ├── _init_.py
+│   │   ├── voucher/
+│   │   │   ├── base_voucher_form.py
+│   │   │   ├── callbacks.py
+│   │   │   ├── column_management.py
+│   │   │   ├── custom_voucher.py
+│   │   │   ├── voucher_form.py
+│   │   │   ├── voucher_management.py
+│   │   │   ├── voucher_operations.py
+│   │   │   ├── voucher_ui.py
+│   │   │   ├── _init_.py
+│   │   │   ├── forms/
+│   │   │   │   ├── credit_note_form.py
+│   │   │   │   ├── debit_note_form.py
+│   │   │   │   ├── delivery_challan_form.py
+│   │   │   │   ├── grn_form.py
+│   │   │   │   ├── internal_return_form.py
+│   │   │   │   ├── proforma_invoice_form.py
+│   │   │   │   ├── purchase_order_form.py
+│   │   │   │   ├── purchase_voucher_form.py
+│   │   │   │   ├── quotation_form.py
+│   │   │   │   ├── rejection_in_out_form.py
+│   │   │   │   ├── sales_order_form.py
+│   │   │   │   ├── sales_voucher_form.py
+│   │   │   │   ├── _init_.py
+│   ├── logs/
+│   │   ├── __init__.py
+│   ├── static/
+│   │   ├── __init__.py
+│   │   ├── qss/
+│   │   │   ├── company.qss
+│   │   │   ├── customers.qss
+│   │   │   ├── database.qss
+│   │   │   ├── default_directory.qss
+│   │   │   ├── delivery_challan_form.qss
+│   │   │   ├── grn_form.qss
+│   │   │   ├── login.qss
+│   │   │   ├── manufacturing.qss
+│   │   │   ├── material_in.qss
+│   │   │   ├── material_out.qss
+│   │   │   ├── mat_out_form.qss
+│   │   │   ├── mega_menu.qss
+│   │   │   ├── pending.qss
+│   │   │   ├── products.qss
+│   │   │   ├── proforma_invoice_form.qss
+│   │   │   ├── purchase_order_form.qss
+│   │   │   ├── purchase_voucher_form.qss
+│   │   │   ├── quotation_form.qss
+│   │   │   ├── sales_order_form.qss
+│   │   │   ├── sales_voucher_form.qss
+│   │   │   ├── stock.qss
+│   │   │   ├── style.qss
+│   │   │   ├── templates.qss
+│   │   │   ├── users.qss
+│   │   │   ├── utils.qss
+│   │   │   ├── vendors.qss
+│   │   │   ├── voucher.qss
+│   ├── structure/
+│   ├── templates/
+│   │   ├── document_templates_logic.py
+│   │   ├── document_templates_ui.py
+│   │   ├── __init__.py

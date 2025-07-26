@@ -1,0 +1,101 @@
+/* Styling for scrollable frames */
+QFrame#scrollableContainer {
+    background-color: #F5F5F5;
+    border: 1px solid #D3D3D3;
+    border-radius: 4px;
+}
+
+QScrollArea#scrollArea {
+    border: none;
+    background-color: transparent;
+}
+
+QWidget#scrollableFrame {
+    background-color: #FFFFFF;
+}
+
+/* Styling for backup, restore, and default directory frames */
+QFrame#backupFrame, QFrame#restoreFrame, QFrame#autoBackupFrame, QFrame#defaultDirectoryFrame {
+    background-color: #FFFFFF;
+    border: none;
+}
+
+/* Styling for labels */
+QLabel {
+    color: #333333;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+}
+
+QLabel[style*="font-weight: bold"] {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Styling for buttons */
+QPushButton {
+    background-color: #4CAF50;
+    color: #FFFFFF;
+    border: 1px solid #4CAF50;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+}
+
+QPushButton:hover {
+    background-color: #45A049;
+    border: 1px solid #45A049;
+}
+
+QPushButton:pressed {
+    background-color: #3D8B40;
+}
+
+/* Styling for combobox */
+QComboBox {
+    border: 1px solid #D3D3D3;
+    border-radius: 4px;
+    padding: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    background-color: #FFFFFF;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/down_arrow.png);
+    width: 10px;
+    height: 10px;
+}
+
+/* Styling for line edit */
+QLineEdit {
+    border: 1px solid #D3D3D3;
+    border-radius: 4px;
+    padding: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    background-color: #FFFFFF;
+}
+
+QLineEdit:read-only {
+    background-color: #F5F5F5;
+}
+
+/* Styling for tree widget in voucher dialog */
+QTreeWidget {
+    border: 1px solid #D3D3D3;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    background-color: #FFFFFF;
+}
+
+QTreeWidget::item:selected {
+    background-color: #E0E0E0;
+}

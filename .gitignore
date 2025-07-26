@@ -1,0 +1,38 @@
+# Python-specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Environment files
+.env
+*.env
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+venv/
+env/
+*.venv/
+
+# PySide6-specific
+*.ui.bak
+*.py.bak
+ui_*.py  # Auto-generated UI files from pyside6-uic
+
+# Miscellaneous
+*.log
+*.bak
+*.swp

@@ -1,0 +1,43 @@
+/* Color Palette */
+/* Primary (Fluent accent blue) */
+ /* --primary: #0078D4; */
+ /* --primary-hover: #106EBE; */
+ /* --primary-pressed: #005A9E; */
+/* Success */
+ /* --success: #107C10; */
+ /* --success-hover: #0D6A0D; */
+ /* --success-pressed: #0A580A; */
+/* Error/Danger */
+ /* --error: #A80000; */
+ /* --error-hover: #7A0000; */
+ /* --error-pressed: #5C0000; */
+/* Warning */
+ /* --warning: #FFB900; */
+ /* --warning-hover: #CC9400; */
+ /* --warning-pressed: #996F00; */
+/* Neutral/Text */
+ /* --text-primary: #1F1F1F; */
+ /* --text-secondary: #605E5C; */
+ /* --text-disabled: #A19F9D; */
+/* Backgrounds */
+ /* --background: #F3F2F1; */ /* Light neutral */
+ /* --surface: #FFFFFF; */ /* Cards, panels */
+ /* --border: #EDEBE9; */ /* Subtle borders */
+ /* --shadow: rgba(0, 0, 0, 0.1); */ /* For shadows in code or QSS */
+/* Fonts */
+ /* --font-family: "Segoe UI", Arial, sans-serif; */
+ /* --font-size-base: 14px; */
+ /* --font-size-large: 18px; */
+ /* --font-size-title: 24px; */
+ /* --font-size-subtitle: 18px; */
+ /* --font-weight-bold: bold; */
+ /* --font-weight-semi: 600; */
+/* Spacing */
+ /* --spacing-small: 8px; */
+ /* --spacing-medium: 16px; */
+ /* --spacing-large: 24px; */
+/* Elevations */
+ /* --elevation-low: 0 1px 4px var(--shadow); */
+ /* --elevation-medium: 0 2px 8px var(--shadow); */
+/* Transitions */
+ /* --transition-fast: 0.2s ease; */

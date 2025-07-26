@@ -1,0 +1,63 @@
+/* products.qss (revised) */
+
+#titleLabel {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+    padding: 10px;
+    border: none;
+    background-color: transparent;
+}
+
+#dialogTitleLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333333;
+    padding: 20px;
+    border: none;
+    background-color: transparent;
+}
+
+#productTable {
+    font-size: 12px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+
+#productTable::item {
+    padding: 5px;
+}
+
+QPushButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: #45a049;
+}
+
+#fieldLabel {
+    font-size: 12px;
+    color: #555555;
+    padding: 5px;
+    border: none;
+    background-color: transparent;
+}
+
+#textEntry {
+    font-size: 12px;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+}
+
+#listWidget {
+    font-size: 12px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+    padding: 5px;
+}

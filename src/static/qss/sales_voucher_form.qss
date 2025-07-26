@@ -1,0 +1,150 @@
+QWidget#SalesVoucherForm {
+    background-color: #ffffff;
+    color: #333333;
+    font-family: Arial, sans-serif;
+}
+
+QLabel#svTitleLabel {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333333;
+    padding: 10px;
+    background-color: transparent;
+    border: none;
+}
+
+QLabel#fieldLabel {
+    font-weight: bold;
+    color: #333333;
+    padding: 2px 5px;
+    background-color: transparent;
+    border: none;
+}
+
+QLineEdit#svNumberEntry {
+    background-color: #f0f0f0;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 12px;
+    color: #333333;
+}
+
+QDateEdit#svDateEntry {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #ffffff;
+    font-size: 12px;
+}
+
+QComboBox#customerCombo, QComboBox#paymentCombo {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #ffffff;
+    font-size: 12px;
+}
+
+QComboBox#customerCombo::drop-down, QComboBox#paymentCombo::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+    border-left-width: 1px;
+    border-left-color: darkgray;
+    border-left-style: solid;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+QComboBox::down-arrow {
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid black;
+}
+
+QPushButton#addCustomerButton, QPushButton#addProductButton {
+    background-color: #0078d7;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 2px;
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+}
+
+QPushButton#addCustomerButton:hover, QPushButton#addProductButton:hover {
+    background-color: #005bb5;
+}
+
+QPushButton#saveButton {
+    background-color: #4caf50;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+QPushButton#saveButton:hover {
+    background-color: #45a049;
+}
+
+QPushButton#cancelButton {
+    background-color: #d32f2f;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+QPushButton#cancelButton:hover {
+    background-color: #c62828;
+}
+
+QPushButton#removeProductButton {
+    background-color: #ffeb3b;
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+QPushButton#removeProductButton:hover {
+    background-color: #ffc107;
+}
+
+QTableWidget#productTable {
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+    gridline-color: #e0e0e0;
+    font-size: 12px;
+}
+
+QTableWidget#productTable::item {
+    padding: 5px;
+}
+
+QTableWidget#productTable::item:selected {
+    background-color: #0078d4;
+    color: #ffffff;
+}
+
+QHeaderView#productTable::section {
+    background-color: #f5f5f5;
+    border: 1px solid #cccccc;
+    padding: 5px;
+    font-weight: bold;
+}
+
+QLineEdit#totalAmountEntry, QLineEdit#amountWordsEntry {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #f0f0f0;
+    font-size: 12px;
+    color: #333333;
+}
