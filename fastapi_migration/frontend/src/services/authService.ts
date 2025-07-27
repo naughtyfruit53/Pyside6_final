@@ -63,6 +63,22 @@ export const authService = {
     localStorage.removeItem('token');
     window.location.href = '/';
   },
+
+  // OTP Authentication
+  requestOTP: async (email: string, purpose: string = 'login') => {
+    const response = await api.post('/auth/otp/request', { email, purpose });
+    return response.data;
+  },
+
+  verifyOTP: async (email: string, otp: string, purpose: string = 'login') => {
+    const response = await api.post('/auth/otp/verify', { email, otp, purpose });
+    return response.data;
+  },
+
+  setupAdminAccount: async () => {
+    const response = await api.post('/auth/admin/setup');
+    return response.data;
+  },
 };
 
 export const voucherService = {

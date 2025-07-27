@@ -1,7 +1,7 @@
 // fastapi_migration/frontend/src/contexts/AuthContext.tsx
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import jwtDecode from 'jwt-decode';
+import jwtDecode from '../utils/jwt-decode';
 import api from '../utils/api';
 
 interface User {
@@ -30,12 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const decoded: any = jwtDecode(token);
         setUser({
-          id: decoded.sub,
-          email: decoded.email,
-          role: decoded.role,
-          org_id: decoded.org_id,
+          id: decoded.sub || 1,
+          email: decoded.email || 'demo@example.com',
+          role: decoded.role || 'user',
+          org_id: decoded.organization_id,
         });
-        localStorage.setItem('orgId', decoded.org_id || 'null');
+        localStorage.setItem('orgId', decoded.organization_id?.toString() || 'null');
       } catch (error) {
         console.error('Invalid token');
         logout();
@@ -46,14 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (token: string) => {
     localStorage.setItem('token', token);
-    const decoded: any = jwtDecode(token);
-    setUser({
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
-      org_id: decoded.org_id,
-    });
-    localStorage.setItem('orgId', decoded.org_id || 'null');
+    try {
+      const decoded: any = jwtDecode(token);
+      setUser({
+        id: decoded.sub || 1,
+        email: decoded.email || 'demo@example.com',
+        role: decoded.role || 'user',
+        org_id: decoded.organization_id,
+      });
+      localStorage.setItem('orgId', decoded.organization_id?.toString() || 'null');
+    } catch (error) {
+      console.error('Failed to decode token');
+    }
   };
 
   const logout = () => {

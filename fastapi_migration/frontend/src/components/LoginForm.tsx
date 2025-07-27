@@ -1,35 +1,110 @@
-// fastapi_migration/frontend/src/components/LoginForm.tsx
-
-import React from 'react';
+import React, { useState } from 'react';
+import { 
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress
+} from '@mui/material';
 import { useForm } from 'react-hook-form';
-import { Button, TextField } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/authService';
 import { useRouter } from 'next/router';
+import { authService } from '../services/authService';
 
-const LoginForm: React.FC = () => {
-  const { register, handleSubmit } = useForm();
-  const { login } = useAuth();
+interface LoginFormProps {
+  onLogin: (token: string) => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const { register, handleSubmit, formState: { errors } } = useForm();
   const router = useRouter();
 
   const onSubmit = async (data: any) => {
+    setLoading(true);
+    setError('');
+    
     try {
-      const response = await authService.login(data.username, data.password);
-      login(response.access_token);
-      router.push('/admin');
-    } catch (error) {
-      console.error('Login failed', error);
+      const response = await authService.loginWithEmail(data.email, data.password);
+      onLogin(response.access_token);
+      
+      // Store user info
+      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('user_role', response.user_role);
+      localStorage.setItem('organization_id', response.organization_id?.toString() || '');
+      
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error: any) {
+      setError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <TextField label="Username" {...register('username', { required: true })} fullWidth margin="normal" />
-      <TextField label="Password" type="password" {...register('password', { required: true })} fullWidth margin="normal" />
-      <Button type="submit" variant="contained" color="primary">
-        Login
-      </Button>
-    </form>
+    <Card>
+      <CardContent sx={{ p: 4 }}>
+        <Typography variant="h5" component="h2" gutterBottom align="center">
+          Standard Login
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+          <TextField
+            fullWidth
+            label="Email Address"
+            type="email"
+            {...register('email', {
+              required: 'Email is required',
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: 'Invalid email address'
+              }
+            })}
+            error={!!errors.email}
+            helperText={errors.email?.message as string}
+            margin="normal"
+            autoFocus
+          />
+
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            {...register('password', {
+              required: 'Password is required'
+            })}
+            error={!!errors.password}
+            helperText={errors.password?.message as string}
+            margin="normal"
+          />
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Login'}
+          </Button>
+        </Box>
+
+        <Typography variant="body2" color="textSecondary" align="center">
+          Use your email and password to login, or try OTP authentication for enhanced security.
+        </Typography>
+      </CardContent>
+    </Card>
   );
 };
 
