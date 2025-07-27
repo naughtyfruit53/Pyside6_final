@@ -321,20 +321,6 @@ class PaymentTerm(Base):
         Index('idx_payment_term_org_name', 'organization_id', 'name'),
     )
 
-class EmailNotification(Base):
-    __tablename__ = "email_notifications"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    to_email = Column(String, nullable=False)
-    subject = Column(String, nullable=False)
-    body = Column(Text)
-    voucher_type = Column(String)
-    voucher_id = Column(Integer)
-    status = Column(String, default="pending")  # pending, sent, failed
-    error_message = Column(Text)
-    sent_at = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
 class OTPVerification(Base):
     __tablename__ = "otp_verifications"
     
@@ -352,5 +338,4 @@ class OTPVerification(Base):
     __table_args__ = (
         Index('idx_otp_email_purpose', 'email', 'purpose'),
         Index('idx_otp_expires', 'expires_at'),
-    )
     )

@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.tenant import get_organization_from_request, TenantContext
 from app.models.base import User, Organization
 from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse
-from app.services.email_service import otp_service
+from app.services.email_service import email_service
 import logging
 
 logger = logging.getLogger(__name__)
