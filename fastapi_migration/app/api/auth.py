@@ -9,7 +9,8 @@ from app.core.security import create_access_token, verify_password, verify_token
 from app.core.config import settings
 from app.core.tenant import get_organization_from_request, TenantContext
 from app.models.base import User, Organization
-from app.schemas.base import Token, UserLogin, UserInDB, UserRole
+from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse
+from app.services.email_service import otp_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -292,3 +293,177 @@ async def test_token(current_user: User = Depends(get_current_user)):
 async def logout():
     """Logout endpoint (client should discard token)"""
     return {"message": "Successfully logged out"}
+
+# OTP Authentication Endpoints
+@router.post("/otp/request", response_model=OTPResponse)
+async def request_otp(
+    otp_request: OTPRequest,
+    db: Session = Depends(get_db)
+):
+    """Request OTP for email authentication"""
+    try:
+        # Check if user exists
+        user = db.query(User).filter(User.email == otp_request.email).first()
+        if not user:
+            # For security, we don't reveal if email exists or not
+            logger.warning(f"OTP requested for non-existent email: {otp_request.email}")
+            # Still return success message
+            return OTPResponse(
+                message="If the email exists in our system, an OTP has been sent.",
+                email=otp_request.email
+            )
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is inactive"
+            )
+        
+        # Generate and send OTP
+        otp = otp_service.create_otp_verification(db, otp_request.email, otp_request.purpose)
+        if not otp:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate OTP. Please try again."
+            )
+        
+        logger.info(f"OTP requested for {otp_request.email} - Purpose: {otp_request.purpose}")
+        return OTPResponse(
+            message="OTP sent successfully to your email address.",
+            email=otp_request.email
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OTP request error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during OTP request"
+        )
+
+@router.post("/otp/verify", response_model=Token)
+async def verify_otp_and_login(
+    otp_verify: OTPVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """Verify OTP and login user"""
+    try:
+        # Verify OTP
+        if not otp_service.verify_otp(db, otp_verify.email, otp_verify.otp, otp_verify.purpose):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired OTP"
+            )
+        
+        # Find user
+        user = db.query(User).filter(User.email == otp_verify.email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is inactive"
+            )
+        
+        # Check organization status if not super admin
+        if not user.is_super_admin:
+            user_org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+            if not user_org or user_org.status != "active":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Organization is not active"
+                )
+        
+        # Reset failed login attempts on successful OTP login
+        if user.failed_login_attempts > 0:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+        
+        # Update last login
+        from sqlalchemy.sql import func
+        user.last_login = func.now()
+        db.commit()
+        
+        # Generate access token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            subject=user.email,
+            organization_id=user.organization_id,
+            expires_delta=access_token_expires
+        )
+        
+        # Get organization name
+        org_name = None
+        if user.organization_id:
+            org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+            org_name = org.name if org else None
+        
+        logger.info(f"User {user.email} logged in successfully via OTP")
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "organization_id": user.organization_id,
+            "organization_name": org_name,
+            "user_role": user.role
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OTP verification error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during OTP verification"
+        )
+
+@router.post("/admin/setup")
+async def setup_admin_account(
+    db: Session = Depends(get_db)
+):
+    """Setup the initial app admin account (naughtyfruit53@gmail.com)"""
+    try:
+        admin_email = "naughtyfruit53@gmail.com"
+        
+        # Check if admin already exists
+        existing_admin = db.query(User).filter(User.email == admin_email).first()
+        if existing_admin:
+            return {"message": "Admin account already exists", "email": admin_email}
+        
+        # Create admin user
+        from app.core.security import get_password_hash
+        admin_user = User(
+            email=admin_email,
+            username="app_admin",
+            full_name="App Administrator",
+            hashed_password=get_password_hash("123456"),  # Default password
+            role=UserRole.SUPER_ADMIN,
+            is_super_admin=True,
+            is_active=True,
+            organization_id=None  # Super admin doesn't belong to any organization
+        )
+        
+        db.add(admin_user)
+        db.commit()
+        db.refresh(admin_user)
+        
+        logger.info(f"Admin account created: {admin_email}")
+        return {
+            "message": "Admin account created successfully",
+            "email": admin_email,
+            "default_password": "123456",
+            "note": "Please change the default password after first login"
+        }
+        
+    except Exception as e:
+        logger.error(f"Admin setup error: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to setup admin account"
+        )

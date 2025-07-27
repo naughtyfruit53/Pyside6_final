@@ -166,6 +166,21 @@ class TokenData(BaseModel):
     email: Optional[str] = None
     organization_id: Optional[int] = None
 
+# OTP Authentication schemas
+class OTPRequest(BaseModel):
+    email: EmailStr
+    purpose: str = "login"  # login, password_reset, registration
+
+class OTPVerifyRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    purpose: str = "login"
+
+class OTPResponse(BaseModel):
+    message: str
+    email: str
+    expires_in_minutes: int = 10
+
 # Company schemas
 class CompanyBase(BaseModel):
     name: str

@@ -320,3 +320,37 @@ class PaymentTerm(Base):
     __table_args__ = (
         Index('idx_payment_term_org_name', 'organization_id', 'name'),
     )
+
+class EmailNotification(Base):
+    __tablename__ = "email_notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    to_email = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    body = Column(Text)
+    voucher_type = Column(String)
+    voucher_id = Column(Integer)
+    status = Column(String, default="pending")  # pending, sent, failed
+    error_message = Column(Text)
+    sent_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class OTPVerification(Base):
+    __tablename__ = "otp_verifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, index=True)
+    otp_hash = Column(String, nullable=False)  # Store hashed OTP for security
+    purpose = Column(String, nullable=False, default="login")  # login, password_reset, registration
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_used = Column(Boolean, default=False)
+    used_at = Column(DateTime(timezone=True))
+    attempts = Column(Integer, default=0)
+    max_attempts = Column(Integer, default=3)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        Index('idx_otp_email_purpose', 'email', 'purpose'),
+        Index('idx_otp_expires', 'expires_at'),
+    )
+    )
