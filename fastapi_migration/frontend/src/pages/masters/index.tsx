@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   Box,
   Container,
@@ -62,11 +63,33 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const MasterDataManagement: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const router = useRouter();
   const [user] = useState({ email: 'demo@example.com', role: 'admin' });
+
+  // Get tab from URL parameter
+  const getInitialTab = () => {
+    const { tab } = router.query;
+    switch (tab) {
+      case 'vendors': return 0;
+      case 'customers': return 1;
+      case 'products': return 2;
+      case 'accounts': return 3;
+      default: return 0;
+    }
+  };
+
+  const [tabValue, setTabValue] = useState(getInitialTab());
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setTabValue(getInitialTab());
+  }, [router.query.tab]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // Update URL without full navigation
+    const tabNames = ['vendors', 'customers', 'products', 'accounts'];
+    router.replace(`/masters?tab=${tabNames[newValue]}`, undefined, { shallow: true });
   };
 
   const handleLogout = () => {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   Box,
   Container,
@@ -58,11 +59,33 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const VoucherManagement: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const router = useRouter();
   const [user] = useState({ email: 'demo@example.com', role: 'admin' });
+
+  // Get tab from URL parameter
+  const getInitialTab = () => {
+    const { tab } = router.query;
+    switch (tab) {
+      case 'purchase': return 0;
+      case 'sales': return 1;
+      case 'financial': return 2;
+      case 'internal': return 3;
+      default: return 0;
+    }
+  };
+
+  const [tabValue, setTabValue] = useState(getInitialTab());
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setTabValue(getInitialTab());
+  }, [router.query.tab]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // Update URL without full navigation
+    const tabNames = ['purchase', 'sales', 'financial', 'internal'];
+    router.replace(`/vouchers?tab=${tabNames[newValue]}`, undefined, { shallow: true });
   };
 
   const handleLogout = () => {
