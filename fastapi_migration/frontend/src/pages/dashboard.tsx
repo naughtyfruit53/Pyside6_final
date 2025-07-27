@@ -6,11 +6,6 @@ import {
   CardContent,
   Typography,
   Button,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Menu,
-  MenuItem,
   Container,
   Paper,
   Table,
@@ -22,29 +17,25 @@ import {
   Chip
 } from '@mui/material';
 import {
-  AccountCircle,
-  Dashboard as DashboardIcon,
   Receipt,
   Inventory,
   People,
   Business,
-  Email,
   Warning
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import { authService, voucherService, masterDataService } from '../services/authService';
 import { useQuery } from 'react-query';
-import { toast } from 'react-toastify';
+import MegaMenu from '../components/MegaMenu';
 
 export default function Dashboard() {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
 
@@ -53,7 +44,7 @@ export default function Dashboard() {
       .then(setUser)
       .catch(() => {
         localStorage.removeItem('token');
-        router.push('/');
+        router.push('/login');
       });
   }, [router]);
 
@@ -69,17 +60,8 @@ export default function Dashboard() {
     masterDataService.getLowStock()
   );
 
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
   const handleLogout = () => {
     authService.logout();
-    handleClose();
   };
 
   const stats = [
@@ -111,50 +93,7 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            TRITIQ ERP - Dashboard
-          </Typography>
-          {user && (
-            <div>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenu}
-                color="inherit"
-              >
-                <AccountCircle />
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem onClick={handleClose}>
-                  Profile: {user.full_name || user.username}
-                </MenuItem>
-                <MenuItem onClick={handleClose}>
-                  Role: {user.role}
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </div>
-          )}
-        </Toolbar>
-      </AppBar>
+      <MegaMenu user={user} onLogout={handleLogout} />
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Grid container spacing={3}>
@@ -270,7 +209,7 @@ export default function Dashboard() {
                   <Button
                     variant="contained"
                     startIcon={<Receipt />}
-                    onClick={() => toast.info('Purchase voucher creation would open here')}
+                    onClick={() => router.push('/vouchers/purchase')}
                   >
                     Create Purchase Voucher
                   </Button>
@@ -280,7 +219,7 @@ export default function Dashboard() {
                     variant="contained"
                     color="success"
                     startIcon={<Receipt />}
-                    onClick={() => toast.info('Sales voucher creation would open here')}
+                    onClick={() => router.push('/vouchers/sales')}
                   >
                     Create Sales Voucher
                   </Button>
@@ -289,7 +228,7 @@ export default function Dashboard() {
                   <Button
                     variant="outlined"
                     startIcon={<People />}
-                    onClick={() => toast.info('Vendor management would open here')}
+                    onClick={() => router.push('/masters/vendors')}
                   >
                     Manage Vendors
                   </Button>
@@ -298,7 +237,7 @@ export default function Dashboard() {
                   <Button
                     variant="outlined"
                     startIcon={<Business />}
-                    onClick={() => toast.info('Customer management would open here')}
+                    onClick={() => router.push('/masters/customers')}
                   >
                     Manage Customers
                   </Button>
@@ -307,7 +246,7 @@ export default function Dashboard() {
                   <Button
                     variant="outlined"
                     startIcon={<Inventory />}
-                    onClick={() => toast.info('Stock management would open here')}
+                    onClick={() => router.push('/inventory/stock')}
                   >
                     Stock Management
                   </Button>
@@ -320,14 +259,15 @@ export default function Dashboard() {
         {/* Welcome Message */}
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="h5" color="primary" gutterBottom>
-            Welcome to the FastAPI Migration of TRITIQ ERP!
+            Welcome to the Enhanced TRITIQ ERP!
           </Typography>
           <Typography variant="body1" color="textSecondary">
-            ✅ Email-based authentication implemented<br/>
-            ✅ Individual voucher tables created<br/>
-            ✅ Email notification system ready<br/>
-            ✅ RESTful API with comprehensive endpoints<br/>
-            ✅ Modern web interface replacing PySide6
+            ✅ OTP-based authentication implemented<br/>
+            ✅ Comprehensive mega menu navigation<br/>
+            ✅ Organized voucher management system<br/>
+            ✅ Master data management modules<br/>
+            ✅ Inventory tracking and reporting<br/>
+            ✅ Modern responsive web interface
           </Typography>
         </Box>
       </Container>
