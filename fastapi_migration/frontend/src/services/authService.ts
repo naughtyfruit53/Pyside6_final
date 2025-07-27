@@ -31,32 +31,58 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/';
     }
-    return Promise.reject(error);
+    
+    // Provide user-friendly error messages
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.message || 
+                        error.message || 
+                        'An unexpected error occurred';
+                        
+    // You can dispatch to a global error handler here
+    console.error('API Error:', errorMessage);
+    
+    return Promise.reject({ 
+      ...error, 
+      userMessage: errorMessage,
+      status: error.response?.status 
+    });
   }
 );
 
 export const authService = {
   login: async (username: string, password: string) => {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    
-    const response = await api.post('/auth/login', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-    return response.data;
+    try {
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('password', password);
+      
+      const response = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Login failed');
+    }
   },
 
   loginWithEmail: async (email: string, password: string) => {
-    const response = await api.post('/auth/login/email', { email, password });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login/email', { email, password });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Email login failed');
+    }
   },
 
   getCurrentUser: async () => {
-    const response = await api.get('/users/me');
-    return response.data;
+    try {
+      const response = await api.get('/users/me');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get user information');
+    }
   },
 
   logout: () => {
@@ -66,18 +92,30 @@ export const authService = {
 
   // OTP Authentication
   requestOTP: async (email: string, purpose: string = 'login') => {
-    const response = await api.post('/auth/otp/request', { email, purpose });
-    return response.data;
+    try {
+      const response = await api.post('/auth/otp/request', { email, purpose });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to send OTP');
+    }
   },
 
   verifyOTP: async (email: string, otp: string, purpose: string = 'login') => {
-    const response = await api.post('/auth/otp/verify', { email, otp, purpose });
-    return response.data;
+    try {
+      const response = await api.post('/auth/otp/verify', { email, otp, purpose });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'OTP verification failed');
+    }
   },
 
   setupAdminAccount: async () => {
-    const response = await api.post('/auth/admin/setup');
-    return response.data;
+    try {
+      const response = await api.post('/auth/admin/setup');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Admin setup failed');
+    }
   },
 };
 
@@ -115,73 +153,125 @@ export const voucherService = {
 export const masterDataService = {
   // Vendors
   getVendors: async (params?: any) => {
-    const response = await api.get('/vendors/', { params });
-    return response.data;
+    try {
+      const response = await api.get('/vendors/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to fetch vendors');
+    }
   },
 
   createVendor: async (data: any) => {
-    const response = await api.post('/vendors/', data);
-    return response.data;
+    try {
+      const response = await api.post('/vendors/', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to create vendor');
+    }
   },
 
   updateVendor: async (id: number, data: any) => {
-    const response = await api.put(`/vendors/${id}`, data);
-    return response.data;
+    try {
+      const response = await api.put(`/vendors/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update vendor');
+    }
   },
 
   // Customers
   getCustomers: async (params?: any) => {
-    const response = await api.get('/customers/', { params });
-    return response.data;
+    try {
+      const response = await api.get('/customers/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to fetch customers');
+    }
   },
 
   createCustomer: async (data: any) => {
-    const response = await api.post('/customers/', data);
-    return response.data;
+    try {
+      const response = await api.post('/customers/', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to create customer');
+    }
   },
 
   updateCustomer: async (id: number, data: any) => {
-    const response = await api.put(`/customers/${id}`, data);
-    return response.data;
+    try {
+      const response = await api.put(`/customers/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update customer');
+    }
   },
 
   // Products
   getProducts: async (params?: any) => {
-    const response = await api.get('/products/', { params });
-    return response.data;
+    try {
+      const response = await api.get('/products/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to fetch products');
+    }
   },
 
   createProduct: async (data: any) => {
-    const response = await api.post('/products/', data);
-    return response.data;
+    try {
+      const response = await api.post('/products/', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to create product');
+    }
   },
 
   updateProduct: async (id: number, data: any) => {
-    const response = await api.put(`/products/${id}`, data);
-    return response.data;
+    try {
+      const response = await api.put(`/products/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update product');
+    }
   },
 
   // Stock
   getStock: async (params?: any) => {
-    const response = await api.get('/stock/', { params });
-    return response.data;
+    try {
+      const response = await api.get('/stock/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to fetch stock data');
+    }
   },
 
   getLowStock: async () => {
-    const response = await api.get('/stock/low-stock');
-    return response.data;
+    try {
+      const response = await api.get('/stock/low-stock');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to fetch low stock data');
+    }
   },
 
   updateStock: async (productId: number, data: any) => {
-    const response = await api.put(`/stock/product/${productId}`, data);
-    return response.data;
+    try {
+      const response = await api.put(`/stock/product/${productId}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update stock');
+    }
   },
 
   adjustStock: async (productId: number, quantityChange: number, reason: string) => {
-    const response = await api.post(`/stock/adjust/${productId}`, null, {
-      params: { quantity_change: quantityChange, reason }
-    });
-    return response.data;
+    try {
+      const response = await api.post(`/stock/adjust/${productId}`, null, {
+        params: { quantity_change: quantityChange, reason }
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to adjust stock');
+    }
   },
 };
 
