@@ -243,3 +243,327 @@ async def send_voucher_email_endpoint(
     
     logger.info(f"Email queued for {voucher_type} {voucher_id} to {recipient_email} by {current_user.email}")
     return {"message": f"Email queued successfully to {recipient_email}"}
+
+# Update and Delete operations for Purchase Vouchers
+@router.put("/purchase-vouchers/{voucher_id}", response_model=PurchaseVoucherInDB)
+async def update_purchase_voucher(
+    voucher_id: int,
+    voucher_update: PurchaseVoucherUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update purchase voucher"""
+    try:
+        # Get the voucher
+        voucher = db.query(PurchaseVoucher).filter(PurchaseVoucher.id == voucher_id).first()
+        if not voucher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Purchase voucher not found"
+            )
+        
+        # Update voucher fields
+        update_data = voucher_update.dict(exclude_unset=True, exclude={'items'})
+        for field, value in update_data.items():
+            setattr(voucher, field, value)
+        
+        # Update items if provided
+        if voucher_update.items is not None:
+            # Delete existing items
+            from app.models.vouchers import PurchaseVoucherItem
+            db.query(PurchaseVoucherItem).filter(
+                PurchaseVoucherItem.purchase_voucher_id == voucher_id
+            ).delete()
+            
+            # Add new items
+            for item_data in voucher_update.items:
+                item = PurchaseVoucherItem(
+                    purchase_voucher_id=voucher_id,
+                    **item_data.dict()
+                )
+                db.add(item)
+        
+        db.commit()
+        db.refresh(voucher)
+        
+        logger.info(f"Purchase voucher {voucher.voucher_number} updated by {current_user.email}")
+        return voucher
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating purchase voucher: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update purchase voucher"
+        )
+
+@router.delete("/purchase-vouchers/{voucher_id}")
+async def delete_purchase_voucher(
+    voucher_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete purchase voucher"""
+    try:
+        # Get the voucher
+        voucher = db.query(PurchaseVoucher).filter(PurchaseVoucher.id == voucher_id).first()
+        if not voucher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Purchase voucher not found"
+            )
+        
+        # Delete associated items first
+        from app.models.vouchers import PurchaseVoucherItem
+        db.query(PurchaseVoucherItem).filter(
+            PurchaseVoucherItem.purchase_voucher_id == voucher_id
+        ).delete()
+        
+        # Delete the voucher
+        db.delete(voucher)
+        db.commit()
+        
+        logger.info(f"Purchase voucher {voucher.voucher_number} deleted by {current_user.email}")
+        return {"message": "Purchase voucher deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting purchase voucher: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete purchase voucher"
+        )
+
+# Update and Delete operations for Sales Vouchers
+@router.put("/sales-vouchers/{voucher_id}", response_model=SalesVoucherInDB)
+async def update_sales_voucher(
+    voucher_id: int,
+    voucher_update: SalesVoucherUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update sales voucher"""
+    try:
+        # Get the voucher
+        voucher = db.query(SalesVoucher).filter(SalesVoucher.id == voucher_id).first()
+        if not voucher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sales voucher not found"
+            )
+        
+        # Update voucher fields
+        update_data = voucher_update.dict(exclude_unset=True, exclude={'items'})
+        for field, value in update_data.items():
+            setattr(voucher, field, value)
+        
+        # Update items if provided
+        if voucher_update.items is not None:
+            # Delete existing items
+            from app.models.vouchers import SalesVoucherItem
+            db.query(SalesVoucherItem).filter(
+                SalesVoucherItem.sales_voucher_id == voucher_id
+            ).delete()
+            
+            # Add new items
+            for item_data in voucher_update.items:
+                item = SalesVoucherItem(
+                    sales_voucher_id=voucher_id,
+                    **item_data.dict()
+                )
+                db.add(item)
+        
+        db.commit()
+        db.refresh(voucher)
+        
+        logger.info(f"Sales voucher {voucher.voucher_number} updated by {current_user.email}")
+        return voucher
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating sales voucher: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update sales voucher"
+        )
+
+@router.delete("/sales-vouchers/{voucher_id}")
+async def delete_sales_voucher(
+    voucher_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete sales voucher"""
+    try:
+        # Get the voucher
+        voucher = db.query(SalesVoucher).filter(SalesVoucher.id == voucher_id).first()
+        if not voucher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sales voucher not found"
+            )
+        
+        # Delete associated items first
+        from app.models.vouchers import SalesVoucherItem
+        db.query(SalesVoucherItem).filter(
+            SalesVoucherItem.sales_voucher_id == voucher_id
+        ).delete()
+        
+        # Delete the voucher
+        db.delete(voucher)
+        db.commit()
+        
+        logger.info(f"Sales voucher {voucher.voucher_number} deleted by {current_user.email}")
+        return {"message": "Sales voucher deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting sales voucher: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete sales voucher"
+        )
+
+# Purchase Orders CRUD
+@router.get("/purchase-orders/", response_model=List[PurchaseOrderInDB])
+async def get_purchase_orders(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all purchase orders"""
+    query = db.query(PurchaseOrder)
+    
+    if status:
+        query = query.filter(PurchaseOrder.status == status)
+    
+    orders = query.offset(skip).limit(limit).all()
+    return orders
+
+@router.post("/purchase-orders/", response_model=PurchaseOrderInDB)
+async def create_purchase_order(
+    order: PurchaseOrderCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create new purchase order"""
+    try:
+        # Create the order
+        order_data = order.dict(exclude={'items'})
+        order_data['created_by'] = current_user.id
+        
+        db_order = PurchaseOrder(**order_data)
+        db.add(db_order)
+        db.flush()  # Get the order ID
+        
+        # Add items
+        for item_data in order.items:
+            from app.models.vouchers import PurchaseOrderItem
+            item = PurchaseOrderItem(
+                purchase_order_id=db_order.id,
+                **item_data.dict()
+            )
+            db.add(item)
+        
+        db.commit()
+        db.refresh(db_order)
+        
+        logger.info(f"Purchase order {order.voucher_number} created by {current_user.email}")
+        return db_order
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating purchase order: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create purchase order"
+        )
+
+@router.get("/purchase-orders/{order_id}", response_model=PurchaseOrderInDB)
+async def get_purchase_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get purchase order by ID"""
+    order = db.query(PurchaseOrder).filter(PurchaseOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Purchase order not found"
+        )
+    return order
+
+# Sales Orders CRUD
+@router.get("/sales-orders/", response_model=List[SalesOrderInDB])
+async def get_sales_orders(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all sales orders"""
+    query = db.query(SalesOrder)
+    
+    if status:
+        query = query.filter(SalesOrder.status == status)
+    
+    orders = query.offset(skip).limit(limit).all()
+    return orders
+
+@router.post("/sales-orders/", response_model=SalesOrderInDB)
+async def create_sales_order(
+    order: SalesOrderCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create new sales order"""
+    try:
+        # Create the order
+        order_data = order.dict(exclude={'items'})
+        order_data['created_by'] = current_user.id
+        
+        db_order = SalesOrder(**order_data)
+        db.add(db_order)
+        db.flush()  # Get the order ID
+        
+        # Add items
+        for item_data in order.items:
+            from app.models.vouchers import SalesOrderItem
+            item = SalesOrderItem(
+                sales_order_id=db_order.id,
+                **item_data.dict()
+            )
+            db.add(item)
+        
+        db.commit()
+        db.refresh(db_order)
+        
+        logger.info(f"Sales order {order.voucher_number} created by {current_user.email}")
+        return db_order
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating sales order: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create sales order"
+        )
+
+@router.get("/sales-orders/{order_id}", response_model=SalesOrderInDB)
+async def get_sales_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get sales order by ID"""
+    order = db.query(SalesOrder).filter(SalesOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sales order not found"
+        )
+    return order

@@ -24,7 +24,7 @@ import {
   Warning
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
-import { authService, voucherService, masterDataService } from '../services/authService';
+import { authService, voucherService, masterDataService, reportsService } from '../services/authService';
 import { useQuery } from 'react-query';
 import MegaMenu from '../components/MegaMenu';
 
@@ -256,20 +256,36 @@ export default function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* Welcome Message */}
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="h5" color="primary" gutterBottom>
-            Welcome to the Enhanced TRITIQ ERP!
+        {/* Recent Activity Summary */}
+        <Paper sx={{ mt: 4, p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Recent Activity
           </Typography>
-          <Typography variant="body1" color="textSecondary">
-            ✅ OTP-based authentication implemented<br/>
-            ✅ Comprehensive mega menu navigation<br/>
-            ✅ Organized voucher management system<br/>
-            ✅ Master data management modules<br/>
-            ✅ Inventory tracking and reporting<br/>
-            ✅ Modern responsive web interface
-          </Typography>
-        </Box>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                • Latest vouchers created today
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                • Pending approvals and reviews
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                • Low stock alerts and notifications
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                • System performance and health
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                • Recent user activities and logins
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                • Data backup and sync status
+              </Typography>
+            </Grid>
+          </Grid>
+        </Paper>
       </Container>
     </Box>
   );

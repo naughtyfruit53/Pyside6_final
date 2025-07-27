@@ -202,4 +202,35 @@ export const companyService = {
   },
 };
 
+export const reportsService = {
+  getDashboardStats: async () => {
+    const response = await api.get('/reports/dashboard-stats');
+    return response.data;
+  },
+
+  getSalesReport: async (params?: any) => {
+    const response = await api.get('/reports/sales-report', { params });
+    return response.data;
+  },
+
+  getPurchaseReport: async (params?: any) => {
+    const response = await api.get('/reports/purchase-report', { params });
+    return response.data;
+  },
+
+  getInventoryReport: async (lowStockOnly = false) => {
+    const response = await api.get('/reports/inventory-report', { 
+      params: { low_stock_only: lowStockOnly } 
+    });
+    return response.data;
+  },
+
+  getPendingOrders: async (orderType = 'all') => {
+    const response = await api.get('/reports/pending-orders', { 
+      params: { order_type: orderType } 
+    });
+    return response.data;
+  },
+};
+
 export default api;
