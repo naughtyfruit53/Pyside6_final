@@ -5,16 +5,20 @@ from alembic import context
 import os
 import sys
 
+# Load .env variables early (safety net if not handled in settings)
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add the app directory to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from app.core.config import settings
-from app.models import Base
+from app.core.database import Base  # Updated import: Base is from database, not models
 
 # this is the Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url with settings
+# Override sqlalchemy.url with settings (from .env)
 config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
 
 # Interpret the config file for Python logging
@@ -39,6 +43,8 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
+    # For Supabase, if RLS (Row Level Security) causes permission issues, 
+    # temporarily disable RLS on tables or use SUPABASE_SERVICE_KEY in a custom engine.
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",

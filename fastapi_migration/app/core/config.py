@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, Optional, List
-from pydantic import BaseSettings, validator
+from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 class Settings(BaseSettings):
     # App Settings
@@ -41,8 +42,10 @@ class Settings(BaseSettings):
     # Cors
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
     
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    def assemble_cors_origins(cls, v: Optional[str | List[str]]) -> List[str] | str:
+        if not v:  # Handle empty or None values gracefully
+            return []  # Return empty list if no origins set
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):

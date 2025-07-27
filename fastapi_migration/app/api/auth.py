@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.core.database import get_db
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, verify_password, verify_token
 from app.core.config import settings
 from app.models.base import User
 from app.schemas.base import Token, UserLogin, UserInDB
@@ -11,6 +11,41 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Dependency to get current user from token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current user from JWT token"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        email = verify_token(token)
+        if email is None:
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise credentials_exception
+    
+    return user
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Get current active user"""
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(
@@ -110,42 +145,4 @@ async def login_with_email(
 @router.post("/test-token", response_model=UserInDB)
 async def test_token(current_user: User = Depends(get_current_user)):
     """Test if the current token is valid and return user info"""
-    return current_user
-
-# Dependency to get current user from token
-from fastapi.security import OAuth2PasswordBearer
-from app.core.security import verify_token
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-) -> User:
-    """Get current user from JWT token"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
-    try:
-        email = verify_token(token)
-        if email is None:
-            raise credentials_exception
-    except Exception:
-        raise credentials_exception
-    
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise credentials_exception
-    
-    return user
-
-async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
-) -> User:
-    """Get current active user"""
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
