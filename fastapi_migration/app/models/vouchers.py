@@ -1,5 +1,7 @@
+# models.vouchers.py (revised)
+
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, declared_attr
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -15,13 +17,18 @@ class BaseVoucher(Base):
     sgst_amount = Column(Float, default=0.0)
     igst_amount = Column(Float, default=0.0)
     discount_amount = Column(Float, default=0.0)
-    created_by = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     status = Column(String, default="draft")  # draft, confirmed, cancelled
     notes = Column(Text)
-    
-    created_by_user = relationship("User")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @declared_attr
+    def created_by(cls):
+        return Column(Integer, ForeignKey("users.id"))
+
+    @declared_attr
+    def created_by_user(cls):
+        return relationship("User")
 
 # Purchase Vouchers
 class PurchaseVoucher(BaseVoucher):
@@ -40,6 +47,7 @@ class PurchaseVoucher(BaseVoucher):
     
     vendor = relationship("Vendor")
     purchase_order = relationship("PurchaseOrder")
+    items = relationship("PurchaseVoucherItem", back_populates="purchase_voucher")
 
 class PurchaseVoucherItem(Base):
     __tablename__ = "purchase_voucher_items"
@@ -59,7 +67,7 @@ class PurchaseVoucherItem(Base):
     igst_amount = Column(Float, default=0.0)
     total_amount = Column(Float, nullable=False)
     
-    purchase_voucher = relationship("PurchaseVoucher", backref="items")
+    purchase_voucher = relationship("PurchaseVoucher", back_populates="items")
     product = relationship("Product")
 
 # Sales Vouchers
@@ -79,6 +87,7 @@ class SalesVoucher(BaseVoucher):
     
     customer = relationship("Customer")
     sales_order = relationship("SalesOrder")
+    items = relationship("SalesVoucherItem", back_populates="sales_voucher")
 
 class SalesVoucherItem(Base):
     __tablename__ = "sales_voucher_items"
@@ -98,7 +107,7 @@ class SalesVoucherItem(Base):
     igst_amount = Column(Float, default=0.0)
     total_amount = Column(Float, nullable=False)
     
-    sales_voucher = relationship("SalesVoucher", backref="items")
+    sales_voucher = relationship("SalesVoucher", back_populates="items")
     product = relationship("Product")
 
 # Purchase Orders
@@ -111,6 +120,7 @@ class PurchaseOrder(BaseVoucher):
     terms_conditions = Column(Text)
     
     vendor = relationship("Vendor")
+    items = relationship("PurchaseOrderItem", back_populates="purchase_order")
 
 class PurchaseOrderItem(Base):
     __tablename__ = "purchase_order_items"
@@ -125,7 +135,7 @@ class PurchaseOrderItem(Base):
     delivered_quantity = Column(Float, default=0.0)
     pending_quantity = Column(Float, nullable=False)
     
-    purchase_order = relationship("PurchaseOrder", backref="items")
+    purchase_order = relationship("PurchaseOrder", back_populates="items")
     product = relationship("Product")
 
 # Sales Orders
@@ -138,6 +148,7 @@ class SalesOrder(BaseVoucher):
     terms_conditions = Column(Text)
     
     customer = relationship("Customer")
+    items = relationship("SalesOrderItem", back_populates="sales_order")
 
 class SalesOrderItem(Base):
     __tablename__ = "sales_order_items"
@@ -152,7 +163,7 @@ class SalesOrderItem(Base):
     delivered_quantity = Column(Float, default=0.0)
     pending_quantity = Column(Float, nullable=False)
     
-    sales_order = relationship("SalesOrder", backref="items")
+    sales_order = relationship("SalesOrder", back_populates="items")
     product = relationship("Product")
 
 # Goods Receipt Note (GRN)
@@ -170,6 +181,7 @@ class GoodsReceiptNote(BaseVoucher):
     
     purchase_order = relationship("PurchaseOrder")
     vendor = relationship("Vendor")
+    items = relationship("GoodsReceiptNoteItem", back_populates="grn")
 
 class GoodsReceiptNoteItem(Base):
     __tablename__ = "goods_receipt_note_items"
@@ -187,7 +199,7 @@ class GoodsReceiptNoteItem(Base):
     total_cost = Column(Float, nullable=False)
     remarks = Column(Text)
     
-    grn = relationship("GoodsReceiptNote", backref="items")
+    grn = relationship("GoodsReceiptNote", back_populates="items")
     product = relationship("Product")
     po_item = relationship("PurchaseOrderItem")
 
@@ -205,6 +217,7 @@ class DeliveryChallan(BaseVoucher):
     
     customer = relationship("Customer")
     sales_order = relationship("SalesOrder")
+    items = relationship("DeliveryChallanItem", back_populates="delivery_challan")
 
 class DeliveryChallanItem(Base):
     __tablename__ = "delivery_challan_items"
@@ -217,7 +230,7 @@ class DeliveryChallanItem(Base):
     unit_price = Column(Float, nullable=False)
     total_amount = Column(Float, nullable=False)
     
-    delivery_challan = relationship("DeliveryChallan", backref="items")
+    delivery_challan = relationship("DeliveryChallan", back_populates="items")
     product = relationship("Product")
 
 # Proforma Invoice
@@ -230,6 +243,7 @@ class ProformaInvoice(BaseVoucher):
     terms_conditions = Column(Text)
     
     customer = relationship("Customer")
+    items = relationship("ProformaInvoiceItem", back_populates="proforma_invoice")
 
 class ProformaInvoiceItem(Base):
     __tablename__ = "proforma_invoice_items"
@@ -249,7 +263,7 @@ class ProformaInvoiceItem(Base):
     igst_amount = Column(Float, default=0.0)
     total_amount = Column(Float, nullable=False)
     
-    proforma_invoice = relationship("ProformaInvoice", backref="items")
+    proforma_invoice = relationship("ProformaInvoice", back_populates="items")
     product = relationship("Product")
 
 # Quotation
@@ -262,6 +276,7 @@ class Quotation(BaseVoucher):
     terms_conditions = Column(Text)
     
     customer = relationship("Customer")
+    items = relationship("QuotationItem", back_populates="quotation")
 
 class QuotationItem(Base):
     __tablename__ = "quotation_items"
@@ -274,7 +289,7 @@ class QuotationItem(Base):
     unit_price = Column(Float, nullable=False)
     total_amount = Column(Float, nullable=False)
     
-    quotation = relationship("Quotation", backref="items")
+    quotation = relationship("Quotation", back_populates="items")
     product = relationship("Product")
 
 # Credit Note
@@ -289,6 +304,7 @@ class CreditNote(BaseVoucher):
     
     customer = relationship("Customer")
     vendor = relationship("Vendor")
+    items = relationship("CreditNoteItem", back_populates="credit_note")
 
 class CreditNoteItem(Base):
     __tablename__ = "credit_note_items"
@@ -301,7 +317,7 @@ class CreditNoteItem(Base):
     unit_price = Column(Float, nullable=False)
     total_amount = Column(Float, nullable=False)
     
-    credit_note = relationship("CreditNote", backref="items")
+    credit_note = relationship("CreditNote", back_populates="items")
     product = relationship("Product")
 
 # Debit Note
@@ -316,6 +332,7 @@ class DebitNote(BaseVoucher):
     
     customer = relationship("Customer")
     vendor = relationship("Vendor")
+    items = relationship("DebitNoteItem", back_populates="debit_note")
 
 class DebitNoteItem(Base):
     __tablename__ = "debit_note_items"
@@ -328,5 +345,5 @@ class DebitNoteItem(Base):
     unit_price = Column(Float, nullable=False)
     total_amount = Column(Float, nullable=False)
     
-    debit_note = relationship("DebitNote", backref="items")
+    debit_note = relationship("DebitNote", back_populates="items")
     product = relationship("Product")

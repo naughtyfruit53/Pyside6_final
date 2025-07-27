@@ -1,0 +1,35 @@
+app/
+│   ├── main.py
+│   ├── __init__.py
+│   ├── api/
+│   │   ├── auth.py
+│   │   ├── companies.py
+│   │   ├── customers.py
+│   │   ├── organizations.py
+│   │   ├── products.py
+│   │   ├── stock.py
+│   │   ├── users.py
+│   │   ├── vendors.py
+│   │   ├── vouchers.py
+│   │   ├── __init__.py
+│   ├── core/
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── security.py
+│   │   ├── tenant.py
+│   │   ├── tenant_config.py
+│   │   ├── __init__.py
+│   ├── models/
+│   │   ├── base.py
+│   │   ├── vouchers.py
+│   │   ├── __init__.py
+│   ├── schemas/
+│   │   ├── base.py
+│   │   ├── vouchers.py
+│   │   ├── __init__.py
+│   ├── services/
+│   │   ├── email_service.py
+│   │   ├── security_services.py
+│   │   ├── __init__.py
+│   ├── utils/
+│   │   ├── __init__.py

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.core.database import get_db
-from app.api.auth import get_current_active_user
+from app.api.auth import get_current_active_user, get_current_admin_user
+from app.core.tenant import TenantQueryMixin, require_current_organization_id
 from app.models.base import User, Vendor
 from app.schemas.base import VendorCreate, VendorUpdate, VendorInDB
 import logging
@@ -14,23 +15,30 @@ router = APIRouter()
 async def get_vendors(
     skip: int = 0,
     limit: int = 100,
-    search: str = None,
+    search: Optional[str] = None,
     active_only: bool = True,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get all vendors"""
+    """Get vendors in current organization"""
+    
     query = db.query(Vendor)
+    
+    # Apply tenant filtering for non-super-admin users
+    if not current_user.is_super_admin:
+        org_id = require_current_organization_id()
+        query = TenantQueryMixin.filter_by_tenant(query, Vendor, org_id)
     
     if active_only:
         query = query.filter(Vendor.is_active == True)
     
     if search:
-        query = query.filter(
+        search_filter = (
             Vendor.name.contains(search) |
             Vendor.contact_number.contains(search) |
             Vendor.email.contains(search)
         )
+        query = query.filter(search_filter)
     
     vendors = query.offset(skip).limit(limit).all()
     return vendors
@@ -48,6 +56,11 @@ async def get_vendor(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Vendor not found"
         )
+    
+    # Ensure tenant access for non-super-admin users
+    if not current_user.is_super_admin:
+        TenantQueryMixin.ensure_tenant_access(vendor, current_user.organization_id)
+    
     return vendor
 
 @router.post("/", response_model=VendorInDB)
@@ -57,21 +70,30 @@ async def create_vendor(
     current_user: User = Depends(get_current_active_user)
 ):
     """Create new vendor"""
-    # Check if vendor name already exists
-    existing_vendor = db.query(Vendor).filter(Vendor.name == vendor.name).first()
+    
+    org_id = require_current_organization_id()
+    
+    # Check if vendor name already exists in organization
+    existing_vendor = db.query(Vendor).filter(
+        Vendor.name == vendor.name,
+        Vendor.organization_id == org_id
+    ).first()
     if existing_vendor:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Vendor name already exists"
+            detail="Vendor with this name already exists in organization"
         )
     
     # Create new vendor
-    db_vendor = Vendor(**vendor.dict())
+    db_vendor = Vendor(
+        organization_id=org_id,
+        **vendor.dict()
+    )
     db.add(db_vendor)
     db.commit()
     db.refresh(db_vendor)
     
-    logger.info(f"Vendor {vendor.name} created by {current_user.email}")
+    logger.info(f"Vendor {vendor.name} created in org {org_id} by {current_user.email}")
     return db_vendor
 
 @router.put("/{vendor_id}", response_model=VendorInDB)
@@ -82,6 +104,7 @@ async def update_vendor(
     current_user: User = Depends(get_current_active_user)
 ):
     """Update vendor"""
+    
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not vendor:
         raise HTTPException(
@@ -89,13 +112,20 @@ async def update_vendor(
             detail="Vendor not found"
         )
     
+    # Ensure tenant access for non-super-admin users
+    if not current_user.is_super_admin:
+        TenantQueryMixin.ensure_tenant_access(vendor, current_user.organization_id)
+    
     # Check name uniqueness if being updated
     if vendor_update.name and vendor_update.name != vendor.name:
-        existing_vendor = db.query(Vendor).filter(Vendor.name == vendor_update.name).first()
+        existing_vendor = db.query(Vendor).filter(
+            Vendor.name == vendor_update.name,
+            Vendor.organization_id == vendor.organization_id
+        ).first()
         if existing_vendor:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Vendor name already exists"
+                detail="Vendor with this name already exists in organization"
             )
     
     # Update vendor
@@ -112,9 +142,10 @@ async def update_vendor(
 async def delete_vendor(
     vendor_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_admin_user)
 ):
-    """Delete vendor (soft delete by setting inactive)"""
+    """Delete vendor (admin only)"""
+    
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not vendor:
         raise HTTPException(
@@ -122,9 +153,15 @@ async def delete_vendor(
             detail="Vendor not found"
         )
     
-    # Soft delete - set as inactive
-    vendor.is_active = False
+    # Ensure tenant access for non-super-admin users
+    if not current_user.is_super_admin:
+        TenantQueryMixin.ensure_tenant_access(vendor, current_user.organization_id)
+    
+    # TODO: Check if vendor has any associated transactions/vouchers
+    # before allowing deletion
+    
+    db.delete(vendor)
     db.commit()
     
-    logger.info(f"Vendor {vendor.name} deactivated by {current_user.email}")
-    return {"message": "Vendor deactivated successfully"}
+    logger.info(f"Vendor {vendor.name} deleted by {current_user.email}")
+    return {"message": "Vendor deleted successfully"}

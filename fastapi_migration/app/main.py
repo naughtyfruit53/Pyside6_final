@@ -3,7 +3,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import create_tables
-from app.api import auth, users, companies, vendors, customers, products, vouchers, stock
+from app.core.tenant import TenantMiddleware
+from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations
 import logging
 
 # Configure logging
@@ -27,8 +28,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add tenant middleware for multi-tenancy
+app.add_middleware(TenantMiddleware)
+
 # Include API routers
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["authentication"])
+app.include_router(organizations.router, prefix=f"{settings.API_V1_STR}/organizations", tags=["organizations"])
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(companies.router, prefix=f"{settings.API_V1_STR}/companies", tags=["companies"])
 app.include_router(vendors.router, prefix=f"{settings.API_V1_STR}/vendors", tags=["vendors"])

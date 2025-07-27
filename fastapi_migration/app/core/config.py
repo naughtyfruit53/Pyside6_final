@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, Optional, List
-from pydantic import BaseSettings, validator
+from pydantic_settings import BaseSettings
+from pydantic import validator
 
 class Settings(BaseSettings):
     # App Settings
@@ -40,6 +41,9 @@ class Settings(BaseSettings):
     
     # Cors
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    
+    # Super Admin Configuration
+    SUPER_ADMIN_EMAILS: List[str] = ["admin@tritiq.com", "superadmin@tritiq.com"]
     
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
