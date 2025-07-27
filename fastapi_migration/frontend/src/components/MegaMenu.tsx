@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -14,7 +14,8 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  IconButton
+  IconButton,
+  Avatar
 } from '@mui/material';
 import {
   Dashboard,
@@ -69,6 +70,27 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
 
   const navigateTo = (path: string) => {
     router.push(path);
+    handleMenuClose();
+  };
+
+  // Add keyboard event listener for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleMenuClose();
+        handleUserMenuClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Enhanced logo navigation function
+  const navigateToHome = () => {
+    router.push('/dashboard');
     handleMenuClose();
   };
 
@@ -260,20 +282,32 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
     <>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            onClick={() => router.push('/dashboard')}
-            sx={{ mr: 2 }}
+          {/* Enhanced Logo Section */}
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              mr: 3,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: 1
+              },
+              p: 1,
+              borderRadius: 1,
+              transition: 'background-color 0.2s'
+            }}
+            onClick={navigateToHome}
           >
-            <Dashboard />
-          </IconButton>
-          
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            TRITIQ ERP
-          </Typography>
+            <Avatar sx={{ bgcolor: 'white', color: 'primary.main', mr: 1 }}>
+              <Dashboard />
+            </Avatar>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+              TRITIQ ERP
+            </Typography>
+          </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
             {Object.entries(menuItems).map(([key, menu]) => (
               <Button
                 key={key}
@@ -295,14 +329,16 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
             >
               Settings
             </Button>
+          </Box>
 
-            <IconButton
-              color="inherit"
-              onClick={handleUserMenuClick}
-              sx={{ ml: 2 }}
-            >
-              <AccountCircle />
-            </IconButton>
+          {/* User Menu */}
+          <IconButton
+            color="inherit"
+            onClick={handleUserMenuClick}
+            sx={{ ml: 2 }}
+          >
+            <AccountCircle />
+          </IconButton>
           </Box>
         </Toolbar>
       </AppBar>

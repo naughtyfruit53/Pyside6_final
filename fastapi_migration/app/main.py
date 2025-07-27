@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import create_tables
 from app.core.tenant import TenantMiddleware
-from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations
+from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations, reports
 import logging
 
 # Configure logging
@@ -41,6 +41,7 @@ app.include_router(customers.router, prefix=f"{settings.API_V1_STR}/customers", 
 app.include_router(products.router, prefix=f"{settings.API_V1_STR}/products", tags=["products"])
 app.include_router(stock.router, prefix=f"{settings.API_V1_STR}/stock", tags=["stock"])
 app.include_router(vouchers.router, prefix=f"{settings.API_V1_STR}/vouchers", tags=["vouchers"])
+app.include_router(reports.router, prefix=f"{settings.API_V1_STR}/reports", tags=["reports"])
 
 @app.on_event("startup")
 async def startup_event():

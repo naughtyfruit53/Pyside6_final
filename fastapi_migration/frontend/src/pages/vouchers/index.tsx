@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   Box,
   Container,
@@ -27,6 +28,8 @@ import {
   Print,
   Visibility
 } from '@mui/icons-material';
+import { useQuery } from 'react-query';
+import { voucherService, reportsService } from '../../services/authService';
 import MegaMenu from '../../components/MegaMenu';
 
 interface TabPanelProps {
@@ -56,118 +59,151 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const VoucherManagement: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const router = useRouter();
   const [user] = useState({ email: 'demo@example.com', role: 'admin' });
+
+  // Get tab from URL parameter
+  const getInitialTab = () => {
+    const { tab } = router.query;
+    switch (tab) {
+      case 'purchase': return 0;
+      case 'sales': return 1;
+      case 'financial': return 2;
+      case 'internal': return 3;
+      default: return 0;
+    }
+  };
+
+  const [tabValue, setTabValue] = useState(getInitialTab());
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setTabValue(getInitialTab());
+  }, [router.query.tab]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // Update URL without full navigation
+    const tabNames = ['purchase', 'sales', 'financial', 'internal'];
+    router.replace(`/vouchers?tab=${tabNames[newValue]}`, undefined, { shallow: true });
   };
 
   const handleLogout = () => {
     // Handle logout
   };
 
-  // Mock data for demonstration
+  // Fetch real data from APIs
+  const { data: dashboardStats } = useQuery('dashboardStats', reportsService.getDashboardStats);
+  const { data: purchaseVouchers, isLoading: purchaseLoading } = useQuery(
+    'purchaseVouchers', 
+    voucherService.getPurchaseVouchers, 
+    { enabled: tabValue === 0 }
+  );
+  const { data: salesVouchers, isLoading: salesLoading } = useQuery(
+    'salesVouchers', 
+    voucherService.getSalesVouchers, 
+    { enabled: tabValue === 1 }
+  );
+
+  // Voucher types with real data
   const voucherTypes = [
     {
       title: 'Purchase Vouchers',
       description: 'Manage purchase transactions, orders, and returns',
-      count: 25,
+      count: dashboardStats?.vouchers?.purchase_vouchers || 0,
       color: '#1976D2',
-      vouchers: [
-        { id: 1, number: 'PV001', date: '2024-01-15', vendor: 'ABC Supplies', amount: 15000, status: 'Approved' },
-        { id: 2, number: 'PV002', date: '2024-01-16', vendor: 'XYZ Materials', amount: 8500, status: 'Pending' },
-        { id: 3, number: 'PV003', date: '2024-01-17', vendor: 'DEF Traders', amount: 12000, status: 'Draft' }
-      ]
+      vouchers: purchaseVouchers || []
     },
     {
       title: 'Sales Vouchers',
       description: 'Manage sales transactions, orders, and returns',
-      count: 18,
+      count: dashboardStats?.vouchers?.sales_vouchers || 0,
       color: '#2E7D32',
-      vouchers: [
-        { id: 1, number: 'SV001', date: '2024-01-15', customer: 'Client A Ltd', amount: 25000, status: 'Confirmed' },
-        { id: 2, number: 'SV002', date: '2024-01-16', customer: 'Customer B Inc', amount: 18500, status: 'Pending' },
-        { id: 3, number: 'SV003', date: '2024-01-17', customer: 'Retail Store C', amount: 32000, status: 'Shipped' }
-      ]
+      vouchers: salesVouchers || []
     },
     {
       title: 'Financial Vouchers',
       description: 'Manage payments, receipts, and journal entries',
-      count: 42,
+      count: 0, // TODO: Implement financial vouchers API
       color: '#7B1FA2',
-      vouchers: [
-        { id: 1, number: 'FV001', date: '2024-01-15', type: 'Payment', amount: 15000, status: 'Processed' },
-        { id: 2, number: 'FV002', date: '2024-01-16', type: 'Receipt', amount: 25000, status: 'Cleared' },
-        { id: 3, number: 'FV003', date: '2024-01-17', type: 'Journal', amount: 0, status: 'Posted' }
-      ]
+      vouchers: []
     },
     {
       title: 'Internal Vouchers',
       description: 'Manage internal transfers and adjustments',
-      count: 12,
+      count: 0, // TODO: Implement internal vouchers API
       color: '#F57C00',
-      vouchers: [
-        { id: 1, number: 'IV001', date: '2024-01-15', type: 'Transfer', amount: 0, status: 'Completed' },
-        { id: 2, number: 'IV002', date: '2024-01-16', type: 'Adjustment', amount: 0, status: 'Pending' },
-        { id: 3, number: 'IV003', date: '2024-01-17', type: 'Production', amount: 0, status: 'In Progress' }
-      ]
+      vouchers: []
     }
   ];
 
-  const renderVoucherTable = (vouchers: any[], type: string) => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Voucher #</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>{type === 'Purchase' ? 'Vendor' : type === 'Sales' ? 'Customer' : 'Type'}</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {vouchers.map((voucher) => (
-            <TableRow key={voucher.id}>
-              <TableCell>{voucher.number}</TableCell>
-              <TableCell>{voucher.date}</TableCell>
-              <TableCell>{voucher.vendor || voucher.customer || voucher.type}</TableCell>
-              <TableCell>{voucher.amount > 0 ? `₹${voucher.amount.toLocaleString()}` : '-'}</TableCell>
-              <TableCell>
-                <Chip
-                  label={voucher.status}
-                  color={
-                    voucher.status === 'Approved' || voucher.status === 'Confirmed' || voucher.status === 'Processed'
-                      ? 'success'
-                      : voucher.status === 'Pending'
-                      ? 'warning'
-                      : 'default'
-                  }
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                <IconButton size="small" color="primary">
-                  <Visibility />
-                </IconButton>
-                <IconButton size="small" color="primary">
-                  <Edit />
-                </IconButton>
-                <IconButton size="small" color="secondary">
-                  <Print />
-                </IconButton>
-                <IconButton size="small" color="info">
-                  <Email />
-                </IconButton>
-              </TableCell>
+  const renderVoucherTable = (vouchers: any[], type: string, isLoading: boolean = false) => {
+    if (isLoading) {
+      return <Typography>Loading {type} vouchers...</Typography>;
+    }
+    
+    if (!vouchers || vouchers.length === 0) {
+      return <Typography>No {type} vouchers found. Click "Create" to add your first voucher.</Typography>;
+    }
+
+    return (
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Voucher #</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>{type === 'Purchase' ? 'Vendor' : type === 'Sales' ? 'Customer' : 'Type'}</TableCell>
+              <TableCell>Amount</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+          </TableHead>
+          <TableBody>
+            {vouchers.map((voucher) => (
+              <TableRow key={voucher.id}>
+                <TableCell>{voucher.voucher_number}</TableCell>
+                <TableCell>{new Date(voucher.date).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  {voucher.vendor?.name || voucher.customer?.name || voucher.type || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {voucher.total_amount > 0 ? `₹${voucher.total_amount.toLocaleString()}` : '-'}
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={voucher.status}
+                    color={
+                      voucher.status === 'approved' || voucher.status === 'confirmed' || voucher.status === 'processed'
+                        ? 'success'
+                        : voucher.status === 'pending'
+                        ? 'warning'
+                        : 'default'
+                    }
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  <IconButton size="small" color="primary">
+                    <Visibility />
+                  </IconButton>
+                  <IconButton size="small" color="primary">
+                    <Edit />
+                  </IconButton>
+                  <IconButton size="small" color="secondary">
+                    <Print />
+                  </IconButton>
+                  <IconButton size="small" color="info">
+                    <Email />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -232,7 +268,7 @@ const VoucherManagement: React.FC = () => {
                 Create Purchase Voucher
               </Button>
             </Box>
-            {renderVoucherTable(voucherTypes[0].vouchers, 'Purchase')}
+            {renderVoucherTable(voucherTypes[0].vouchers, 'Purchase', purchaseLoading)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
@@ -242,7 +278,7 @@ const VoucherManagement: React.FC = () => {
                 Create Sales Voucher
               </Button>
             </Box>
-            {renderVoucherTable(voucherTypes[1].vouchers, 'Sales')}
+            {renderVoucherTable(voucherTypes[1].vouchers, 'Sales', salesLoading)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
@@ -252,7 +288,7 @@ const VoucherManagement: React.FC = () => {
                 Create Financial Voucher
               </Button>
             </Box>
-            {renderVoucherTable(voucherTypes[2].vouchers, 'Financial')}
+            {renderVoucherTable(voucherTypes[2].vouchers, 'Financial', false)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={3}>
@@ -262,7 +298,7 @@ const VoucherManagement: React.FC = () => {
                 Create Internal Voucher
               </Button>
             </Box>
-            {renderVoucherTable(voucherTypes[3].vouchers, 'Internal')}
+            {renderVoucherTable(voucherTypes[3].vouchers, 'Internal', false)}
           </TabPanel>
         </Paper>
 

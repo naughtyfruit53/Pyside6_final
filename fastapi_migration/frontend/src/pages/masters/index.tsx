@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   Box,
   Container,
@@ -31,6 +32,8 @@ import {
   Inventory,
   AccountBalance
 } from '@mui/icons-material';
+import { useQuery } from 'react-query';
+import { masterDataService, reportsService } from '../../services/authService';
 import MegaMenu from '../../components/MegaMenu';
 
 interface TabPanelProps {
@@ -60,198 +63,212 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const MasterDataManagement: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const router = useRouter();
   const [user] = useState({ email: 'demo@example.com', role: 'admin' });
+
+  // Get tab from URL parameter
+  const getInitialTab = () => {
+    const { tab } = router.query;
+    switch (tab) {
+      case 'vendors': return 0;
+      case 'customers': return 1;
+      case 'products': return 2;
+      case 'accounts': return 3;
+      default: return 0;
+    }
+  };
+
+  const [tabValue, setTabValue] = useState(getInitialTab());
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setTabValue(getInitialTab());
+  }, [router.query.tab]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // Update URL without full navigation
+    const tabNames = ['vendors', 'customers', 'products', 'accounts'];
+    router.replace(`/masters?tab=${tabNames[newValue]}`, undefined, { shallow: true });
   };
 
   const handleLogout = () => {
     // Handle logout
   };
 
-  // Mock data for demonstration
+  // Fetch data from APIs
+  const { data: dashboardStats } = useQuery('dashboardStats', reportsService.getDashboardStats);
+  const { data: vendors, isLoading: vendorsLoading } = useQuery('vendors', masterDataService.getVendors, { enabled: tabValue === 0 });
+  const { data: customers, isLoading: customersLoading } = useQuery('customers', masterDataService.getCustomers, { enabled: tabValue === 1 });
+  const { data: products, isLoading: productsLoading } = useQuery('products', masterDataService.getProducts, { enabled: tabValue === 2 });
+
+  // Master data summary with real data
   const masterDataTypes = [
     {
       title: 'Vendors',
       description: 'Supplier and vendor management',
-      count: 45,
+      count: dashboardStats?.masters?.vendors || 0,
       color: '#1976D2',
       icon: <Business />
     },
     {
       title: 'Customers',
       description: 'Customer and client management',
-      count: 128,
+      count: dashboardStats?.masters?.customers || 0,
       color: '#2E7D32',
       icon: <Person />
     },
     {
       title: 'Products',
       description: 'Product catalog and inventory items',
-      count: 234,
+      count: dashboardStats?.masters?.products || 0,
       color: '#7B1FA2',
       icon: <Inventory />
     },
     {
       title: 'Accounts',
       description: 'Chart of accounts and financial setup',
-      count: 67,
+      count: 0, // TODO: Implement accounts API
       color: '#F57C00',
       icon: <AccountBalance />
     }
   ];
 
-  const vendors = [
-    { id: 1, name: 'ABC Supplies Ltd', contact: 'John Smith', phone: '+91-9876543210', email: 'john@abcsupplies.com', gst: '27ABCDE1234F1Z5', status: 'Active' },
-    { id: 2, name: 'XYZ Materials Inc', contact: 'Sarah Johnson', phone: '+91-9876543211', email: 'sarah@xyzmaterials.com', gst: '27XYZAB1234F1Z5', status: 'Active' },
-    { id: 3, name: 'DEF Traders', contact: 'Mike Wilson', phone: '+91-9876543212', email: 'mike@deftraders.com', gst: '27DEFGH1234F1Z5', status: 'Inactive' }
-  ];
+  const renderTable = (data: any[], type: string, isLoading: boolean = false) => {
+    if (isLoading) {
+      return <Typography>Loading {type}...</Typography>;
+    }
+    
+    if (!data || data.length === 0) {
+      return <Typography>No {type} found. Click "Add" to create your first entry.</Typography>;
+    }
 
-  const customers = [
-    { id: 1, name: 'Client A Ltd', contact: 'Emma Davis', phone: '+91-9876543220', email: 'emma@clienta.com', gst: '27CLIENT1234F1Z5', status: 'Active' },
-    { id: 2, name: 'Customer B Inc', contact: 'Robert Brown', phone: '+91-9876543221', email: 'robert@customerb.com', gst: '27CUSTB1234F1Z5', status: 'Active' },
-    { id: 3, name: 'Retail Store C', contact: 'Lisa Garcia', phone: '+91-9876543222', email: 'lisa@retailc.com', gst: '27RETAIL1234F1Z5', status: 'Active' }
-  ];
-
-  const products = [
-    { id: 1, name: 'Raw Material A', category: 'Materials', unit: 'KG', price: 150, stock: 500, status: 'Active' },
-    { id: 2, name: 'Component B', category: 'Components', unit: 'PCS', price: 25, stock: 1200, status: 'Active' },
-    { id: 3, name: 'Finished Product C', category: 'Finished Goods', unit: 'PCS', price: 500, stock: 75, status: 'Low Stock' }
-  ];
-
-  const accounts = [
-    { id: 1, code: '1001', name: 'Cash in Hand', type: 'Asset', balance: 25000, status: 'Active' },
-    { id: 2, code: '2001', name: 'Accounts Payable', type: 'Liability', balance: 45000, status: 'Active' },
-    { id: 3, code: '3001', name: 'Sales Revenue', type: 'Income', balance: 125000, status: 'Active' }
-  ];
-
-  const renderTable = (data: any[], type: string) => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            {type === 'vendors' || type === 'customers' ? (
-              <>
-                <TableCell>Name</TableCell>
-                <TableCell>Contact Person</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>GST Number</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </>
-            ) : type === 'products' ? (
-              <>
-                <TableCell>Product Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Unit</TableCell>
-                <TableCell>Price (₹)</TableCell>
-                <TableCell>Stock</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </>
-            ) : (
-              <>
-                <TableCell>Account Code</TableCell>
-                <TableCell>Account Name</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Balance (₹)</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </>
-            )}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {data.map((item) => (
-            <TableRow key={item.id}>
+    return (
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
               {type === 'vendors' || type === 'customers' ? (
                 <>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                        {item.name.charAt(0)}
-                      </Avatar>
-                      {item.name}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{item.contact}</TableCell>
-                  <TableCell>{item.phone}</TableCell>
-                  <TableCell>{item.email}</TableCell>
-                  <TableCell>{item.gst}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={item.status}
-                      color={item.status === 'Active' ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton size="small" color="primary">
-                      <Edit />
-                    </IconButton>
-                    <IconButton size="small" color="info">
-                      <Email />
-                    </IconButton>
-                    <IconButton size="small" color="secondary">
-                      <Phone />
-                    </IconButton>
-                  </TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Contact Person</TableCell>
+                  <TableCell>Phone</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>GST Number</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </>
               ) : type === 'products' ? (
                 <>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell>{item.unit}</TableCell>
-                  <TableCell>₹{item.price.toLocaleString()}</TableCell>
-                  <TableCell>{item.stock}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={item.status}
-                      color={item.status === 'Active' ? 'success' : item.status === 'Low Stock' ? 'warning' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton size="small" color="primary">
-                      <Edit />
-                    </IconButton>
-                    <IconButton size="small" color="info">
-                      <Inventory />
-                    </IconButton>
-                  </TableCell>
+                  <TableCell>Product Name</TableCell>
+                  <TableCell>HSN Code</TableCell>
+                  <TableCell>Unit</TableCell>
+                  <TableCell>Price (₹)</TableCell>
+                  <TableCell>GST Rate</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </>
               ) : (
                 <>
-                  <TableCell>{item.code}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.type}</TableCell>
-                  <TableCell>₹{item.balance.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={item.status}
-                      color={item.status === 'Active' ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton size="small" color="primary">
-                      <Edit />
-                    </IconButton>
-                    <IconButton size="small" color="info">
-                      <AccountBalance />
-                    </IconButton>
-                  </TableCell>
+                  <TableCell>Account Code</TableCell>
+                  <TableCell>Account Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Balance (₹)</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </>
               )}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+          </TableHead>
+          <TableBody>
+            {data.map((item) => (
+              <TableRow key={item.id}>
+                {type === 'vendors' || type === 'customers' ? (
+                  <>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                          {item.name?.charAt(0) || '?'}
+                        </Avatar>
+                        {item.name}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{item.contact_person || 'N/A'}</TableCell>
+                    <TableCell>{item.contact_number || item.phone}</TableCell>
+                    <TableCell>{item.email || 'N/A'}</TableCell>
+                    <TableCell>{item.gst_number || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={item.is_active ? 'Active' : 'Inactive'}
+                        color={item.is_active ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small" color="primary">
+                        <Edit />
+                      </IconButton>
+                      <IconButton size="small" color="info">
+                        <Email />
+                      </IconButton>
+                      <IconButton size="small" color="secondary">
+                        <Phone />
+                      </IconButton>
+                    </TableCell>
+                  </>
+                ) : type === 'products' ? (
+                  <>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.hsn_code || 'N/A'}</TableCell>
+                    <TableCell>{item.unit}</TableCell>
+                    <TableCell>₹{item.unit_price?.toLocaleString() || 0}</TableCell>
+                    <TableCell>{item.gst_rate || 0}%</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={item.is_active ? 'Active' : 'Inactive'}
+                        color={item.is_active ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small" color="primary">
+                        <Edit />
+                      </IconButton>
+                      <IconButton size="small" color="info">
+                        <Inventory />
+                      </IconButton>
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell>{item.code}</TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.type}</TableCell>
+                    <TableCell>₹{item.balance?.toLocaleString() || 0}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={item.status || 'Active'}
+                        color={item.status === 'Active' ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small" color="primary">
+                        <Edit />
+                      </IconButton>
+                      <IconButton size="small" color="info">
+                        <AccountBalance />
+                      </IconButton>
+                    </TableCell>
+                  </>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -321,7 +338,7 @@ const MasterDataManagement: React.FC = () => {
                 Add New Vendor
               </Button>
             </Box>
-            {renderTable(vendors, 'vendors')}
+            {renderTable(vendors || [], 'vendors', vendorsLoading)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
@@ -331,7 +348,7 @@ const MasterDataManagement: React.FC = () => {
                 Add New Customer
               </Button>
             </Box>
-            {renderTable(customers, 'customers')}
+            {renderTable(customers || [], 'customers', customersLoading)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
@@ -341,7 +358,7 @@ const MasterDataManagement: React.FC = () => {
                 Add New Product
               </Button>
             </Box>
-            {renderTable(products, 'products')}
+            {renderTable(products || [], 'products', productsLoading)}
           </TabPanel>
 
           <TabPanel value={tabValue} index={3}>
@@ -351,7 +368,7 @@ const MasterDataManagement: React.FC = () => {
                 Add New Account
               </Button>
             </Box>
-            {renderTable(accounts, 'accounts')}
+            {renderTable([], 'accounts', false)} {/* TODO: Implement accounts API */}
           </TabPanel>
         </Paper>
 
