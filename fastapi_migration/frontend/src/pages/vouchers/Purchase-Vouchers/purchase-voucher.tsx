@@ -1,3 +1,4 @@
+// purchase-voucher.tsx
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
@@ -5,6 +6,7 @@ import { Box, Button, TextField, Typography, Grid, IconButton, Alert, CircularPr
 import { Add, Remove, Edit, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { voucherService } from '../../../services/authService';
+import { getVendors, getProducts } from '../../../services/masterService';
 
 const numberToWordsInteger = (num: number): string => {
   if (num === 0) return '';
@@ -50,7 +52,7 @@ const numberToWords = (num: number): string => {
 const PurchaseVoucherPage: React.FC = () => {
   const router = useRouter();
   const { id, mode: queryMode } = router.query;
-  const [mode, setMode] = useState<'create' | 'edit' | 'view'>((queryMode as any) || 'create');
+  const [mode, setMode ] = useState<'create' | 'edit' | 'view'>((queryMode as any) || 'create');
   const [selectedId, setSelectedId] = useState<number | null>(id ? Number(id) : null);
   const queryClient = useQueryClient();
 
@@ -93,12 +95,12 @@ const PurchaseVoucherPage: React.FC = () => {
 
   const { data: vendorList } = useQuery(
     ['vendors'],
-    () => voucherService.getVendors() // Assume this method exists to fetch vendors
+    () => getVendors()
   );
 
   const { data: productList } = useQuery(
     ['products'],
-    () => voucherService.getProducts() // Assume this method exists to fetch products
+    () => getProducts()
   );
 
   const { data: voucherData, isLoading: isFetching } = useQuery(
@@ -296,7 +298,7 @@ const PurchaseVoucherPage: React.FC = () => {
                           error={!!errors.items?.[index]?.quantity}
                           helperText={errors.items?.[index]?.quantity ? 'Required' : ''}
                           disabled={isViewMode}
-                        />
+                       />
                       </Grid>
                       <Grid item xs={1}>
                         <TextField

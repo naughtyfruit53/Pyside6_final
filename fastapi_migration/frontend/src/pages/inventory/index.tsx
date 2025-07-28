@@ -1,3 +1,4 @@
+// pages/inventory/index.tsx
 import React, { useState } from 'react';
 import {
   Box,
@@ -37,8 +38,8 @@ import {
   Visibility
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { masterDataService } from '../services/authService';
-import MegaMenu from '../components/MegaMenu';
+import { masterDataService } from '../../services/authService';
+import ExcelImportExport from '../../components/ExcelImportExport';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -110,6 +111,17 @@ const InventoryManagement: React.FC = () => {
       }
     }
   );
+
+  const importStockMutation = useMutation(masterDataService.bulkImportStock, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('stock');
+      queryClient.invalidateQueries('lowStock');
+    }
+  });
+
+  const handleImportStock = (importedData: any[]) => {
+    importStockMutation.mutate(importedData);
+  };
 
   const handleAdjustStock = () => {
     if (selectedProduct && adjustment.quantity && adjustment.reason) {
@@ -276,8 +288,6 @@ const InventoryManagement: React.FC = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <MegaMenu user={user} onLogout={handleLogout} />
-
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Box>
@@ -320,6 +330,7 @@ const InventoryManagement: React.FC = () => {
                 Add Stock Entry
               </Button>
             </Box>
+            <ExcelImportExport data={stock || []} entity="Stock" onImport={handleImportStock} />
             {renderStockTable(stock || [], false, stockLoading)}
           </TabPanel>
 
@@ -352,37 +363,6 @@ const InventoryManagement: React.FC = () => {
             </Box>
             <Typography>Stock valuation reporting coming soon...</Typography>
           </TabPanel>
-        </Paper>
-
-        {/* Features */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Inventory Management Features
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body1" paragraph>
-                ✅ <strong>Real-time Stock Tracking:</strong> Live inventory levels with auto-refresh
-              </Typography>
-              <Typography variant="body1" paragraph>
-                ✅ <strong>Low Stock Alerts:</strong> Automatic notifications for reorder levels
-              </Typography>
-              <Typography variant="body1" paragraph>
-                ✅ <strong>Stock Adjustments:</strong> Easy quantity adjustments with reason tracking
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body1" paragraph>
-                ✅ <strong>Inventory Valuation:</strong> Real-time stock value calculations
-              </Typography>
-              <Typography variant="body1" paragraph>
-                🔄 <strong>Movement Tracking:</strong> Complete audit trail (coming soon)
-              </Typography>
-              <Typography variant="body1" paragraph>
-                🔄 <strong>Multi-location Support:</strong> Warehouse management (coming soon)
-              </Typography>
-            </Grid>
-          </Grid>
         </Paper>
       </Container>
 

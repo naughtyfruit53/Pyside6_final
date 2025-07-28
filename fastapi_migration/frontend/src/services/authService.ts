@@ -1,5 +1,4 @@
-// revised fastapi_migration/frontend/src/services/authService.ts
-
+// services/authService.ts
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -208,6 +207,15 @@ export const masterDataService = {
     }
   },
 
+  deleteVendor: async (id: number) => {
+    try {
+      const response = await api.delete(`/vendors/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to delete vendor');
+    }
+  },
+
   // Customers
   getCustomers: async (params?: any) => {
     try {
@@ -236,6 +244,15 @@ export const masterDataService = {
     }
   },
 
+  deleteCustomer: async (id: number) => {
+    try {
+      const response = await api.delete(`/customers/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to delete customer');
+    }
+  },
+
   // Products
   getProducts: async (params?: any) => {
     try {
@@ -261,6 +278,15 @@ export const masterDataService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to update product');
+    }
+  },
+
+  deleteProduct: async (id: number) => {
+    try {
+      const response = await api.delete(`/products/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to delete product');
     }
   },
 

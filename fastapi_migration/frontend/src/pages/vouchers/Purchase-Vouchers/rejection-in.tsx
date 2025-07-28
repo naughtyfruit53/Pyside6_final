@@ -1,3 +1,4 @@
+// rejection-in.tsx
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
@@ -5,6 +6,7 @@ import { Box, Button, TextField, Typography, Grid, IconButton, Alert, CircularPr
 import { Add, Remove, Edit, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { voucherService } from '../../../services/authService';
+import { getVendors, getProducts } from '../../../services/masterService';
 
 const numberToWordsInteger = (num: number): string => {
   if (num === 0) return '';
@@ -93,12 +95,12 @@ const RejectionInPage: React.FC = () => {
 
   const { data: vendorList } = useQuery(
     ['vendors'],
-    () => voucherService.getVendors() // Assume this method exists to fetch vendors
+    () => getVendors()
   );
 
   const { data: productList } = useQuery(
     ['products'],
-    () => voucherService.getProducts() // Assume this method exists to fetch products
+    () => getProducts()
   );
 
   const { data: voucherData, isLoading: isFetching } = useQuery(
