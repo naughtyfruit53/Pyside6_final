@@ -410,3 +410,25 @@ class PaymentTermInDB(PaymentTermBase):
     
     class Config:
         orm_mode = True
+
+# Bulk import/export response schemas
+class BulkImportResponse(BaseModel):
+    message: str
+    total_processed: int
+    created: int
+    updated: int
+    errors: List[str] = []
+    
+class BulkImportError(BaseModel):
+    row: int
+    field: str
+    value: str
+    error: str
+    
+class DetailedBulkImportResponse(BaseModel):
+    message: str
+    total_processed: int
+    created: int
+    updated: int
+    skipped: int
+    errors: List[BulkImportError] = []
