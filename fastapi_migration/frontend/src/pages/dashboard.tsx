@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Grid,
@@ -24,29 +24,11 @@ import {
   Warning
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
-import { authService, voucherService, masterDataService, reportsService } from '../services/authService';
+import { voucherService, masterDataService } from '../services/authService';
 import { useQuery } from 'react-query';
-import MegaMenu from '../components/MegaMenu';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    // Get current user
-    authService.getCurrentUser()
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem('token');
-        router.push('/login');
-      });
-  }, [router]);
 
   const { data: purchaseVouchers } = useQuery('purchaseVouchers', () =>
     voucherService.getPurchaseVouchers({ limit: 5 })
@@ -59,10 +41,6 @@ export default function Dashboard() {
   const { data: lowStock } = useQuery('lowStock', () =>
     masterDataService.getLowStock()
   );
-
-  const handleLogout = () => {
-    authService.logout();
-  };
 
   const stats = [
     {
@@ -85,7 +63,7 @@ export default function Dashboard() {
     },
     {
       title: 'Active Session',
-      value: user ? '1' : '0',
+      value: '1', // Assume active; adjust if needed based on global user state
       icon: <People />,
       color: '#7B1FA2'
     }
@@ -93,8 +71,6 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <MegaMenu user={user} onLogout={handleLogout} />
-
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Grid container spacing={3}>
           {/* Statistics Cards */}
@@ -205,25 +181,6 @@ export default function Dashboard() {
                 Quick Actions
               </Typography>
               <Grid container spacing={2}>
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    startIcon={<Receipt />}
-                    onClick={() => router.push('/vouchers/purchase')}
-                  >
-                    Create Purchase Voucher
-                  </Button>
-                </Grid>
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<Receipt />}
-                    onClick={() => router.push('/vouchers/sales')}
-                  >
-                    Create Sales Voucher
-                  </Button>
-                </Grid>
                 <Grid item>
                   <Button
                     variant="outlined"

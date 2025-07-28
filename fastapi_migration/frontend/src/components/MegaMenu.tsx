@@ -35,7 +35,9 @@ import {
   BarChart,
   Security,
   Storage,
-  Build
+  Build,
+  ReceiptLong,
+  NoteAdd
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 
@@ -102,34 +104,44 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
         {
           title: 'Purchase Vouchers',
           items: [
-            { name: 'Purchase Voucher', path: '/vouchers/purchase', icon: <ShoppingCart /> },
-            { name: 'Purchase Order', path: '/vouchers/purchase-order', icon: <LocalShipping /> },
-            { name: 'Purchase Return', path: '/vouchers/purchase-return', icon: <SwapHoriz /> }
+            { name: 'Purchase Order', path: '/vouchers/Purchase-Vouchers/purchase-order', icon: <LocalShipping /> },
+            { name: 'GRN (Goods Received Note)', path: '/vouchers/Purchase-Vouchers/grn', icon: <Inventory /> },
+            { name: 'Purchase Voucher', path: '/vouchers/Purchase-Vouchers/purchase-voucher', icon: <ShoppingCart /> },
+            { name: 'Rejection In', path: '/vouchers/Purchase-Vouchers/rejection-in', icon: <SwapHoriz /> }
           ]
         },
         {
           title: 'Sales Vouchers',
           items: [
-            { name: 'Sales Voucher', path: '/vouchers/sales', icon: <TrendingUp /> },
-            { name: 'Sales Order', path: '/vouchers/sales-order', icon: <Assessment /> },
-            { name: 'Sales Return', path: '/vouchers/sales-return', icon: <SwapHoriz /> }
+            { name: 'Sales Voucher', path: '/vouchers/Sales-Vouchers/sales-voucher', icon: <TrendingUp /> },
+            { name: 'Delivery Challan', path: '/vouchers/Sales-Vouchers/delivery-challan', icon: <LocalShipping /> },
+            { name: 'Non-Sales Credit Note', path: '/vouchers/Sales-Vouchers/non-sales-credit-note', icon: <AccountBalance /> },
+            { name: 'Rejection Out', path: '/vouchers/Sales-Vouchers/rejection-out', icon: <SwapHoriz /> }
+          ]
+        },
+        {
+          title: 'Pre Sales Vouchers',
+          items: [
+            { name: 'Quotation', path: '/vouchers/Pre-Sales-Voucher/quotation', icon: <NoteAdd /> },
+            { name: 'Proforma Invoice', path: '/vouchers/Pre-Sales-Voucher/proforma-invoice', icon: <ReceiptLong /> },
+            { name: 'Sales Order', path: '/vouchers/Pre-Sales-Voucher/sales-order', icon: <Assessment /> }
           ]
         },
         {
           title: 'Financial Vouchers',
           items: [
-            { name: 'Payment Voucher', path: '/vouchers/payment', icon: <AccountBalance /> },
-            { name: 'Receipt Voucher', path: '/vouchers/receipt', icon: <AccountBalance /> },
-            { name: 'Journal Voucher', path: '/vouchers/journal', icon: <AccountBalance /> },
-            { name: 'Contra Voucher', path: '/vouchers/contra', icon: <AccountBalance /> }
+            { name: 'Payment Voucher', path: '/vouchers/payment-voucher', icon: <AccountBalance /> },
+            { name: 'Receipt Voucher', path: '/vouchers/receipt-voucher', icon: <AccountBalance /> },
+            { name: 'Journal Voucher', path: '/vouchers/journal-voucher', icon: <AccountBalance /> },
+            { name: 'Contra Voucher', path: '/vouchers/contra-voucher', icon: <AccountBalance /> },
+            { name: 'Credit Note', path: '/vouchers/credit-note', icon: <AccountBalance /> },
+            { name: 'Debit Note', path: '/vouchers/debit-note', icon: <AccountBalance /> }
           ]
         },
         {
           title: 'Internal Vouchers',
           items: [
-            { name: 'Material Transfer', path: '/vouchers/material-transfer', icon: <SwapHoriz /> },
-            { name: 'Stock Adjustment', path: '/vouchers/stock-adjustment', icon: <Inventory /> },
-            { name: 'Production Voucher', path: '/vouchers/production', icon: <Build /> }
+            { name: 'Inter Department Voucher', path: '/vouchers/inter-department-voucher', icon: <SwapHoriz /> }
           ]
         }
       ]
@@ -222,7 +234,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
     if (!activeMenu || !menuItems[activeMenu as keyof typeof menuItems]) return null;
 
     const menu = menuItems[activeMenu as keyof typeof menuItems];
-    
+
     return (
       <Menu
         anchorEl={anchorEl}
@@ -339,7 +351,6 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
           >
             <AccountCircle />
           </IconButton>
-          </Box>
         </Toolbar>
       </AppBar>
 

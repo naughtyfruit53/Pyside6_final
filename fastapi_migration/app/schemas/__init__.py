@@ -1,3 +1,5 @@
+# revised fastapi_migration/app/schemas/__init__.py
+
 from .base import (
     UserBase, UserCreate, UserUpdate, UserInDB, UserLogin, Token, TokenData,
     CompanyBase, CompanyCreate, CompanyUpdate, CompanyInDB,
@@ -12,20 +14,20 @@ from .base import (
 from .vouchers import (
     VoucherItemBase, VoucherItemWithTax, VoucherBase,
     PurchaseVoucherItemCreate, PurchaseVoucherItemInDB,
-    PurchaseVoucherBase, PurchaseVoucherCreate, PurchaseVoucherUpdate, PurchaseVoucherInDB,
+    PurchaseVoucherCreate, PurchaseVoucherUpdate, PurchaseVoucherInDB,
     SalesVoucherItemCreate, SalesVoucherItemInDB,
-    SalesVoucherBase, SalesVoucherCreate, SalesVoucherUpdate, SalesVoucherInDB,
+    SalesVoucherCreate, SalesVoucherUpdate, SalesVoucherInDB,
     PurchaseOrderItemCreate, PurchaseOrderItemInDB,
-    PurchaseOrderBase, PurchaseOrderCreate, PurchaseOrderUpdate, PurchaseOrderInDB,
+    PurchaseOrderCreate, PurchaseOrderUpdate, PurchaseOrderInDB,
     SalesOrderItemCreate, SalesOrderItemInDB,
-    SalesOrderBase, SalesOrderCreate, SalesOrderUpdate, SalesOrderInDB,
-    GRNItemCreate, GRNItemInDB, GRNBase, GRNCreate, GRNUpdate, GRNInDB,
+    SalesOrderCreate, SalesOrderUpdate, SalesOrderInDB,
+    GRNItemCreate, GRNItemInDB, GRNCreate, GRNUpdate, GRNInDB,
     DeliveryChallanItemCreate, DeliveryChallanItemInDB,
-    DeliveryChallanBase, DeliveryChallanCreate, DeliveryChallanUpdate, DeliveryChallanInDB,
+    DeliveryChallanCreate, DeliveryChallanUpdate, DeliveryChallanInDB,
     ProformaInvoiceItemCreate, ProformaInvoiceItemInDB,
-    ProformaInvoiceBase, ProformaInvoiceCreate, ProformaInvoiceUpdate, ProformaInvoiceInDB,
+    ProformaInvoiceCreate, ProformaInvoiceUpdate, ProformaInvoiceInDB,
     QuotationItemCreate, QuotationItemInDB,
-    QuotationBase, QuotationCreate, QuotationUpdate, QuotationInDB
+    QuotationCreate, QuotationUpdate, QuotationInDB
 )
 
 __all__ = [
@@ -42,18 +44,18 @@ __all__ = [
     # Voucher schemas
     "VoucherItemBase", "VoucherItemWithTax", "VoucherBase",
     "PurchaseVoucherItemCreate", "PurchaseVoucherItemInDB",
-    "PurchaseVoucherBase", "PurchaseVoucherCreate", "PurchaseVoucherUpdate", "PurchaseVoucherInDB",
+    "PurchaseVoucherCreate", "PurchaseVoucherUpdate", "PurchaseVoucherInDB",
     "SalesVoucherItemCreate", "SalesVoucherItemInDB",
-    "SalesVoucherBase", "SalesVoucherCreate", "SalesVoucherUpdate", "SalesVoucherInDB",
+    "SalesVoucherCreate", "SalesVoucherUpdate", "SalesVoucherInDB",
     "PurchaseOrderItemCreate", "PurchaseOrderItemInDB",
-    "PurchaseOrderBase", "PurchaseOrderCreate", "PurchaseOrderUpdate", "PurchaseOrderInDB",
+    "PurchaseOrderCreate", "PurchaseOrderUpdate", "PurchaseOrderInDB",
     "SalesOrderItemCreate", "SalesOrderItemInDB",
-    "SalesOrderBase", "SalesOrderCreate", "SalesOrderUpdate", "SalesOrderInDB",
-    "GRNItemCreate", "GRNItemInDB", "GRNBase", "GRNCreate", "GRNUpdate", "GRNInDB",
+    "SalesOrderCreate", "SalesOrderUpdate", "SalesOrderInDB",
+    "GRNItemCreate", "GRNItemInDB", "GRNCreate", "GRNUpdate", "GRNInDB",
     "DeliveryChallanItemCreate", "DeliveryChallanItemInDB",
-    "DeliveryChallanBase", "DeliveryChallanCreate", "DeliveryChallanUpdate", "DeliveryChallanInDB",
+    "DeliveryChallanCreate", "DeliveryChallanUpdate", "DeliveryChallanInDB",
     "ProformaInvoiceItemCreate", "ProformaInvoiceItemInDB",
-    "ProformaInvoiceBase", "ProformaInvoiceCreate", "ProformaInvoiceUpdate", "ProformaInvoiceInDB",
+    "ProformaInvoiceCreate", "ProformaInvoiceUpdate", "ProformaInvoiceInDB",
     "QuotationItemCreate", "QuotationItemInDB",
-    "QuotationBase", "QuotationCreate", "QuotationUpdate", "QuotationInDB"
+    "QuotationCreate", "QuotationUpdate", "QuotationInDB"
 ]

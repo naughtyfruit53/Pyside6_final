@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Layout from '../components/Layout'; // Adjust path if needed
+import { useRouter } from 'next/router';
+import { authService } from '../services/authService'; // Adjust path if needed
 
 // Create theme
 const theme = createTheme({
@@ -32,11 +35,37 @@ const queryClient = new QueryClient({
 });
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    authService.getCurrentUser()
+      .then(setUser)
+      .catch(() => {
+        localStorage.removeItem('token');
+        router.push('/login');
+      });
+  }, [router]);
+
+  const handleLogout = () => {
+    authService.logout();
+    setUser(null);
+    router.push('/login');
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Component {...pageProps} />
+        <Layout user={user} onLogout={handleLogout}>
+          <Component {...pageProps} />
+        </Layout>
         <ToastContainer
           position="top-right"
           autoClose={5000}

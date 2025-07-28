@@ -1,11 +1,10 @@
-# models.vouchers.py (revised)
+# revised fastapi_migration/app/models/vouchers.py
 
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship, declared_attr
 from sqlalchemy.sql import func
 from app.core.database import Base
 
-# Base class for all vouchers
 class BaseVoucher(Base):
     __abstract__ = True
     
@@ -17,7 +16,7 @@ class BaseVoucher(Base):
     sgst_amount = Column(Float, default=0.0)
     igst_amount = Column(Float, default=0.0)
     discount_amount = Column(Float, default=0.0)
-    status = Column(String, default="draft")  # draft, confirmed, cancelled
+    status = Column(String, default="draft")
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -30,7 +29,42 @@ class BaseVoucher(Base):
     def created_by_user(cls):
         return relationship("User")
 
-# Purchase Vouchers
+class VoucherItemBase(Base):
+    __abstract__ = True
+    
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)
+    unit_price = Column(Float, nullable=False)
+    discount_percentage = Column(Float, default=0.0)
+    discount_amount = Column(Float, default=0.0)
+    taxable_amount = Column(Float, nullable=False)
+    gst_rate = Column(Float, default=0.0)
+    cgst_amount = Column(Float, default=0.0)
+    sgst_amount = Column(Float, default=0.0)
+    igst_amount = Column(Float, default=0.0)
+    total_amount = Column(Float, nullable=False)
+    
+    @declared_attr
+    def product(cls):
+        return relationship("Product")
+
+class SimpleVoucherItemBase(Base):
+    __abstract__ = True
+    
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)
+    unit_price = Column(Float, nullable=False)
+    total_amount = Column(Float, nullable=False)
+    
+    @declared_attr
+    def product(cls):
+        return relationship("Product")
+
+# Purchase Voucher
 class PurchaseVoucher(BaseVoucher):
     __tablename__ = "purchase_vouchers"
     
@@ -49,28 +83,13 @@ class PurchaseVoucher(BaseVoucher):
     purchase_order = relationship("PurchaseOrder")
     items = relationship("PurchaseVoucherItem", back_populates="purchase_voucher")
 
-class PurchaseVoucherItem(Base):
+class PurchaseVoucherItem(VoucherItemBase):
     __tablename__ = "purchase_voucher_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     purchase_voucher_id = Column(Integer, ForeignKey("purchase_vouchers.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    discount_percentage = Column(Float, default=0.0)
-    discount_amount = Column(Float, default=0.0)
-    taxable_amount = Column(Float, nullable=False)
-    gst_rate = Column(Float, default=0.0)
-    cgst_amount = Column(Float, default=0.0)
-    sgst_amount = Column(Float, default=0.0)
-    igst_amount = Column(Float, default=0.0)
-    total_amount = Column(Float, nullable=False)
-    
     purchase_voucher = relationship("PurchaseVoucher", back_populates="items")
-    product = relationship("Product")
 
-# Sales Vouchers
+# Sales Voucher
 class SalesVoucher(BaseVoucher):
     __tablename__ = "sales_vouchers"
     
@@ -89,28 +108,13 @@ class SalesVoucher(BaseVoucher):
     sales_order = relationship("SalesOrder")
     items = relationship("SalesVoucherItem", back_populates="sales_voucher")
 
-class SalesVoucherItem(Base):
+class SalesVoucherItem(VoucherItemBase):
     __tablename__ = "sales_voucher_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     sales_voucher_id = Column(Integer, ForeignKey("sales_vouchers.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    discount_percentage = Column(Float, default=0.0)
-    discount_amount = Column(Float, default=0.0)
-    taxable_amount = Column(Float, nullable=False)
-    gst_rate = Column(Float, default=0.0)
-    cgst_amount = Column(Float, default=0.0)
-    sgst_amount = Column(Float, default=0.0)
-    igst_amount = Column(Float, default=0.0)
-    total_amount = Column(Float, nullable=False)
-    
     sales_voucher = relationship("SalesVoucher", back_populates="items")
-    product = relationship("Product")
 
-# Purchase Orders
+# Purchase Order
 class PurchaseOrder(BaseVoucher):
     __tablename__ = "purchase_orders"
     
@@ -122,23 +126,16 @@ class PurchaseOrder(BaseVoucher):
     vendor = relationship("Vendor")
     items = relationship("PurchaseOrderItem", back_populates="purchase_order")
 
-class PurchaseOrderItem(Base):
+class PurchaseOrderItem(SimpleVoucherItemBase):
     __tablename__ = "purchase_order_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     purchase_order_id = Column(Integer, ForeignKey("purchase_orders.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    total_amount = Column(Float, nullable=False)
     delivered_quantity = Column(Float, default=0.0)
     pending_quantity = Column(Float, nullable=False)
     
     purchase_order = relationship("PurchaseOrder", back_populates="items")
-    product = relationship("Product")
 
-# Sales Orders
+# Sales Order
 class SalesOrder(BaseVoucher):
     __tablename__ = "sales_orders"
     
@@ -150,21 +147,14 @@ class SalesOrder(BaseVoucher):
     customer = relationship("Customer")
     items = relationship("SalesOrderItem", back_populates="sales_order")
 
-class SalesOrderItem(Base):
+class SalesOrderItem(SimpleVoucherItemBase):
     __tablename__ = "sales_order_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     sales_order_id = Column(Integer, ForeignKey("sales_orders.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    total_amount = Column(Float, nullable=False)
     delivered_quantity = Column(Float, default=0.0)
     pending_quantity = Column(Float, nullable=False)
     
     sales_order = relationship("SalesOrder", back_populates="items")
-    product = relationship("Product")
 
 # Goods Receipt Note (GRN)
 class GoodsReceiptNote(BaseVoucher):
@@ -219,19 +209,11 @@ class DeliveryChallan(BaseVoucher):
     sales_order = relationship("SalesOrder")
     items = relationship("DeliveryChallanItem", back_populates="delivery_challan")
 
-class DeliveryChallanItem(Base):
+class DeliveryChallanItem(SimpleVoucherItemBase):
     __tablename__ = "delivery_challan_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     delivery_challan_id = Column(Integer, ForeignKey("delivery_challans.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    total_amount = Column(Float, nullable=False)
-    
     delivery_challan = relationship("DeliveryChallan", back_populates="items")
-    product = relationship("Product")
 
 # Proforma Invoice
 class ProformaInvoice(BaseVoucher):
@@ -245,26 +227,11 @@ class ProformaInvoice(BaseVoucher):
     customer = relationship("Customer")
     items = relationship("ProformaInvoiceItem", back_populates="proforma_invoice")
 
-class ProformaInvoiceItem(Base):
+class ProformaInvoiceItem(VoucherItemBase):
     __tablename__ = "proforma_invoice_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     proforma_invoice_id = Column(Integer, ForeignKey("proforma_invoices.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    discount_percentage = Column(Float, default=0.0)
-    discount_amount = Column(Float, default=0.0)
-    taxable_amount = Column(Float, nullable=False)
-    gst_rate = Column(Float, default=0.0)
-    cgst_amount = Column(Float, default=0.0)
-    sgst_amount = Column(Float, default=0.0)
-    igst_amount = Column(Float, default=0.0)
-    total_amount = Column(Float, nullable=False)
-    
     proforma_invoice = relationship("ProformaInvoice", back_populates="items")
-    product = relationship("Product")
 
 # Quotation
 class Quotation(BaseVoucher):
@@ -278,19 +245,11 @@ class Quotation(BaseVoucher):
     customer = relationship("Customer")
     items = relationship("QuotationItem", back_populates="quotation")
 
-class QuotationItem(Base):
+class QuotationItem(SimpleVoucherItemBase):
     __tablename__ = "quotation_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     quotation_id = Column(Integer, ForeignKey("quotations.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    total_amount = Column(Float, nullable=False)
-    
     quotation = relationship("Quotation", back_populates="items")
-    product = relationship("Product")
 
 # Credit Note
 class CreditNote(BaseVoucher):
@@ -298,7 +257,7 @@ class CreditNote(BaseVoucher):
     
     customer_id = Column(Integer, ForeignKey("customers.id"))
     vendor_id = Column(Integer, ForeignKey("vendors.id"))
-    reference_voucher_type = Column(String)  # "sales_voucher", "purchase_voucher", etc.
+    reference_voucher_type = Column(String)
     reference_voucher_id = Column(Integer)
     reason = Column(String, nullable=False)
     
@@ -306,19 +265,11 @@ class CreditNote(BaseVoucher):
     vendor = relationship("Vendor")
     items = relationship("CreditNoteItem", back_populates="credit_note")
 
-class CreditNoteItem(Base):
+class CreditNoteItem(SimpleVoucherItemBase):
     __tablename__ = "credit_note_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     credit_note_id = Column(Integer, ForeignKey("credit_notes.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    total_amount = Column(Float, nullable=False)
-    
     credit_note = relationship("CreditNote", back_populates="items")
-    product = relationship("Product")
 
 # Debit Note
 class DebitNote(BaseVoucher):
@@ -334,16 +285,91 @@ class DebitNote(BaseVoucher):
     vendor = relationship("Vendor")
     items = relationship("DebitNoteItem", back_populates="debit_note")
 
-class DebitNoteItem(Base):
+class DebitNoteItem(SimpleVoucherItemBase):
     __tablename__ = "debit_note_items"
     
-    id = Column(Integer, primary_key=True, index=True)
     debit_note_id = Column(Integer, ForeignKey("debit_notes.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    total_amount = Column(Float, nullable=False)
-    
     debit_note = relationship("DebitNote", back_populates="items")
-    product = relationship("Product")
+
+# Payment Voucher
+class PaymentVoucher(BaseVoucher):
+    __tablename__ = "payment_vouchers"
+    
+    vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=False)
+    payment_method = Column(String)
+    reference = Column(String)
+    
+    vendor = relationship("Vendor")
+
+# Receipt Voucher
+class ReceiptVoucher(BaseVoucher):
+    __tablename__ = "receipt_vouchers"
+    
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    receipt_method = Column(String)
+    reference = Column(String)
+    
+    customer = relationship("Customer")
+
+# Contra Voucher
+class ContraVoucher(BaseVoucher):
+    __tablename__ = "contra_vouchers"
+    
+    from_account = Column(String)
+    to_account = Column(String)
+
+# Journal Voucher
+class JournalVoucher(BaseVoucher):
+    __tablename__ = "journal_vouchers"
+    
+    entries = Column(Text)  # JSON string of entries
+
+# Inter Department Voucher
+class InterDepartmentVoucher(BaseVoucher):
+    __tablename__ = "inter_department_vouchers"
+    
+    from_department = Column(String)
+    to_department = Column(String)
+    items = relationship("InterDepartmentVoucherItem", back_populates="inter_department_voucher")
+
+class InterDepartmentVoucherItem(SimpleVoucherItemBase):
+    __tablename__ = "inter_department_voucher_items"
+    
+    inter_department_voucher_id = Column(Integer, ForeignKey("inter_department_vouchers.id"), nullable=False)
+    inter_department_voucher = relationship("InterDepartmentVoucher", back_populates="items")
+
+# Rejection In (Purchase Return)
+class PurchaseReturn(BaseVoucher):
+    __tablename__ = "purchase_returns"
+    
+    vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=False)
+    reference_voucher_id = Column(Integer, ForeignKey("purchase_vouchers.id"))
+    reason = Column(Text)
+    
+    vendor = relationship("Vendor")
+    reference_voucher = relationship("PurchaseVoucher")
+    items = relationship("PurchaseReturnItem", back_populates="purchase_return")
+
+class PurchaseReturnItem(VoucherItemBase):
+    __tablename__ = "purchase_return_items"
+    
+    purchase_return_id = Column(Integer, ForeignKey("purchase_returns.id"), nullable=False)
+    purchase_return = relationship("PurchaseReturn", back_populates="items")
+
+# Rejection Out (Sales Return)
+class SalesReturn(BaseVoucher):
+    __tablename__ = "sales_returns"
+    
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    reference_voucher_id = Column(Integer, ForeignKey("sales_vouchers.id"))
+    reason = Column(Text)
+    
+    customer = relationship("Customer")
+    reference_voucher = relationship("SalesVoucher")
+    items = relationship("SalesReturnItem", back_populates="sales_return")
+
+class SalesReturnItem(VoucherItemBase):
+    __tablename__ = "sales_return_items"
+    
+    sales_return_id = Column(Integer, ForeignKey("sales_returns.id"), nullable=False)
+    sales_return = relationship("SalesReturn", back_populates="items")

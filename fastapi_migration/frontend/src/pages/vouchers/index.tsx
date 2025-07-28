@@ -1,3 +1,5 @@
+// revised fastapi_migration/frontend/src/pages/vouchers/index.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import {
@@ -92,6 +94,36 @@ const VoucherManagement: React.FC = () => {
     // Handle logout
   };
 
+  const handleCreateVoucher = (tabIndex: number) => {
+    const tabNames = ['purchase', 'sales', 'financial', 'internal'];
+    router.push(`/vouchers/${tabNames[tabIndex]}`);
+  };
+
+  const handleViewVoucher = (type: string, id: number) => {
+    router.push(`/vouchers/${type.toLowerCase()}/view/${id}`);
+  };
+
+  const handleEditVoucher = (type: string, id: number) => {
+    router.push(`/vouchers/${type.toLowerCase()}/edit/${id}`);
+  };
+
+  const handlePrintVoucher = (type: string, id: number) => {
+    // TODO: Implement print functionality, e.g., open a print dialog or generate PDF
+    alert(`Printing ${type} voucher ${id}`);
+  };
+
+  const handleEmailVoucher = async (type: string, id: number) => {
+    const voucherType = type === 'Purchase' ? 'purchase_voucher' : (type === 'Sales' ? 'sales_voucher' : '');
+    if (!voucherType) return alert('Email not supported for this type');
+
+    try {
+      await voucherService.sendVoucherEmail(voucherType, id);
+      alert('Email sent successfully');
+    } catch (error: any) {
+      alert(`Error sending email: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   // Fetch real data from APIs
   const { data: dashboardStats } = useQuery('dashboardStats', reportsService.getDashboardStats);
   const { data: purchaseVouchers, isLoading: purchaseLoading } = useQuery(
@@ -143,7 +175,7 @@ const VoucherManagement: React.FC = () => {
     }
     
     if (!vouchers || vouchers.length === 0) {
-      return <Typography>No {type} vouchers found. Click "Create" to add your first voucher.</Typography>;
+      return <Typography>No {type} vouchers found.</Typography>;
     }
 
     return (
@@ -184,16 +216,16 @@ const VoucherManagement: React.FC = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  <IconButton size="small" color="primary">
+                  <IconButton size="small" color="primary" onClick={() => handleViewVoucher(type, voucher.id)}>
                     <Visibility />
                   </IconButton>
-                  <IconButton size="small" color="primary">
+                  <IconButton size="small" color="primary" onClick={() => handleEditVoucher(type, voucher.id)}>
                     <Edit />
                   </IconButton>
-                  <IconButton size="small" color="secondary">
+                  <IconButton size="small" color="secondary" onClick={() => handlePrintVoucher(type, voucher.id)}>
                     <Print />
                   </IconButton>
-                  <IconButton size="small" color="info">
+                  <IconButton size="small" color="info" onClick={() => handleEmailVoucher(type, voucher.id)}>
                     <Email />
                   </IconButton>
                 </TableCell>
@@ -235,14 +267,6 @@ const VoucherManagement: React.FC = () => {
                         {voucherType.description}
                       </Typography>
                     </Box>
-                    <Button
-                      variant="contained"
-                      startIcon={<Add />}
-                      sx={{ bgcolor: voucherType.color }}
-                      size="small"
-                    >
-                      Create
-                    </Button>
                   </Box>
                 </CardContent>
               </Card>
@@ -264,9 +288,6 @@ const VoucherManagement: React.FC = () => {
           <TabPanel value={tabValue} index={0}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
               <Typography variant="h6">Purchase Vouchers</Typography>
-              <Button variant="contained" startIcon={<Add />}>
-                Create Purchase Voucher
-              </Button>
             </Box>
             {renderVoucherTable(voucherTypes[0].vouchers, 'Purchase', purchaseLoading)}
           </TabPanel>
@@ -274,9 +295,6 @@ const VoucherManagement: React.FC = () => {
           <TabPanel value={tabValue} index={1}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
               <Typography variant="h6">Sales Vouchers</Typography>
-              <Button variant="contained" startIcon={<Add />} color="success">
-                Create Sales Voucher
-              </Button>
             </Box>
             {renderVoucherTable(voucherTypes[1].vouchers, 'Sales', salesLoading)}
           </TabPanel>
@@ -284,9 +302,6 @@ const VoucherManagement: React.FC = () => {
           <TabPanel value={tabValue} index={2}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
               <Typography variant="h6">Financial Vouchers</Typography>
-              <Button variant="contained" startIcon={<Add />} sx={{ bgcolor: '#7B1FA2' }}>
-                Create Financial Voucher
-              </Button>
             </Box>
             {renderVoucherTable(voucherTypes[2].vouchers, 'Financial', false)}
           </TabPanel>
@@ -294,9 +309,6 @@ const VoucherManagement: React.FC = () => {
           <TabPanel value={tabValue} index={3}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
               <Typography variant="h6">Internal Vouchers</Typography>
-              <Button variant="contained" startIcon={<Add />} sx={{ bgcolor: '#F57C00' }}>
-                Create Internal Voucher
-              </Button>
             </Box>
             {renderVoucherTable(voucherTypes[3].vouchers, 'Internal', false)}
           </TabPanel>

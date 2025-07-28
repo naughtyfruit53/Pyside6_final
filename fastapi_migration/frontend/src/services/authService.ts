@@ -1,3 +1,5 @@
+// revised fastapi_migration/frontend/src/services/authService.ts
+
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -120,33 +122,60 @@ export const authService = {
 };
 
 export const voucherService = {
-  // Purchase Vouchers
-  getPurchaseVouchers: async (params?: any) => {
-    const response = await api.get('/vouchers/purchase-vouchers/', { params });
-    return response.data;
+  // Generic function for CRUD
+  getVouchers: async (type: string, params?: any) => {
+    try {
+      const response = await api.get(`/vouchers/${type}/`, { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || `Failed to fetch ${type}`);
+    }
   },
 
-  createPurchaseVoucher: async (data: any, sendEmail = false) => {
-    const response = await api.post(`/vouchers/purchase-vouchers/?send_email=${sendEmail}`, data);
-    return response.data;
+  createVoucher: async (type: string, data: any, sendEmail = false) => {
+    try {
+      const response = await api.post(`/vouchers/${type}/?send_email=${sendEmail}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || `Failed to create ${type}`);
+    }
   },
 
-  // Sales Vouchers
-  getSalesVouchers: async (params?: any) => {
-    const response = await api.get('/vouchers/sales-vouchers/', { params });
-    return response.data;
+  getVoucherById: async (type: string, id: number) => {
+    try {
+      const response = await api.get(`/vouchers/${type}/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || `Failed to fetch ${type}`);
+    }
   },
 
-  createSalesVoucher: async (data: any, sendEmail = false) => {
-    const response = await api.post(`/vouchers/sales-vouchers/?send_email=${sendEmail}`, data);
-    return response.data;
+  updateVoucher: async (type: string, id: number, data: any) => {
+    try {
+      const response = await api.put(`/vouchers/${type}/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || `Failed to update ${type}`);
+    }
   },
 
-  // Email
+  deleteVoucher: async (type: string, id: number) => {
+    try {
+      const response = await api.delete(`/vouchers/${type}/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || `Failed to delete ${type}`);
+    }
+  },
+
   sendVoucherEmail: async (voucherType: string, voucherId: number, customEmail?: string) => {
     const params = customEmail ? `?custom_email=${customEmail}` : '';
-    const response = await api.post(`/vouchers/send-email/${voucherType}/${voucherId}${params}`);
-    return response.data;
+    try {
+      const response = await api.post(`/vouchers/send-email/${voucherType}/${voucherId}${params}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to send email');
+    }
   },
 };
 
@@ -277,49 +306,81 @@ export const masterDataService = {
 
 export const companyService = {
   getCurrentCompany: async () => {
-    const response = await api.get('/companies/current');
-    return response.data;
+    try {
+      const response = await api.get('/companies/current');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get current company');
+    }
   },
 
   createCompany: async (data: any) => {
-    const response = await api.post('/companies/', data);
-    return response.data;
+    try {
+      const response = await api.post('/companies/', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to create company');
+    }
   },
 
   updateCompany: async (id: number, data: any) => {
-    const response = await api.put(`/companies/${id}`, data);
-    return response.data;
+    try {
+      const response = await api.put(`/companies/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update company');
+    }
   },
 };
 
 export const reportsService = {
   getDashboardStats: async () => {
-    const response = await api.get('/reports/dashboard-stats');
-    return response.data;
+    try {
+      const response = await api.get('/reports/dashboard-stats');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get dashboard stats');
+    }
   },
 
   getSalesReport: async (params?: any) => {
-    const response = await api.get('/reports/sales-report', { params });
-    return response.data;
+    try {
+      const response = await api.get('/reports/sales-report', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get sales report');
+    }
   },
 
   getPurchaseReport: async (params?: any) => {
-    const response = await api.get('/reports/purchase-report', { params });
-    return response.data;
+    try {
+      const response = await api.get('/reports/purchase-report', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get purchase report');
+    }
   },
 
   getInventoryReport: async (lowStockOnly = false) => {
-    const response = await api.get('/reports/inventory-report', { 
-      params: { low_stock_only: lowStockOnly } 
-    });
-    return response.data;
+    try {
+      const response = await api.get('/reports/inventory-report', { 
+        params: { low_stock_only: lowStockOnly } 
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get inventory report');
+    }
   },
 
   getPendingOrders: async (orderType = 'all') => {
-    const response = await api.get('/reports/pending-orders', { 
-      params: { order_type: orderType } 
-    });
-    return response.data;
+    try {
+      const response = await api.get('/reports/pending-orders', { 
+        params: { order_type: orderType } 
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get pending orders');
+    }
   },
 };
 
