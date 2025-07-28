@@ -26,6 +26,11 @@ async def get_stock(
     """Get stock information"""
     query = db.query(Stock).join(Product)
     
+    # Apply tenant filtering for non-super-admin users
+    if not current_user.is_super_admin:
+        org_id = require_current_organization_id()
+        query = TenantQueryMixin.filter_by_tenant(query, Stock, org_id)
+    
     if product_id:
         query = query.filter(Stock.product_id == product_id)
     
@@ -42,9 +47,16 @@ async def get_low_stock(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get products with low stock (below reorder level)"""
-    low_stock_items = db.query(Stock).join(Product).filter(
+    query = db.query(Stock).join(Product).filter(
         Stock.quantity <= Product.reorder_level
-    ).all()
+    )
+    
+    # Apply tenant filtering for non-super-admin users
+    if not current_user.is_super_admin:
+        org_id = require_current_organization_id()
+        query = TenantQueryMixin.filter_by_tenant(query, Stock, org_id)
+    
+    low_stock_items = query.all()
     return low_stock_items
 
 @router.get("/product/{product_id}", response_model=StockInDB)
@@ -55,6 +67,7 @@ async def get_product_stock(
 ):
     """Get stock for specific product"""
     stock = db.query(Stock).filter(Stock.product_id == product_id).first()
+    
     if not stock:
         # Return zero stock if no record exists
         product = db.query(Product).filter(Product.id == product_id).first()
@@ -63,14 +76,25 @@ async def get_product_stock(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Product not found"
             )
+        
+        # Ensure tenant access for non-super-admin users
+        if not current_user.is_super_admin:
+            TenantQueryMixin.ensure_tenant_access(product, current_user.organization_id)
+        
         return StockInDB(
             id=0,
+            organization_id=product.organization_id,
             product_id=product_id,
             quantity=0.0,
             unit=product.unit,
             location="",
             last_updated=product.created_at
         )
+    
+    # Ensure tenant access for non-super-admin users
+    if not current_user.is_super_admin:
+        TenantQueryMixin.ensure_tenant_access(stock, current_user.organization_id)
+    
     return stock
 
 @router.post("/", response_model=StockInDB)
@@ -80,6 +104,8 @@ async def create_stock_entry(
     current_user: User = Depends(get_current_active_user)
 ):
     """Create new stock entry"""
+    org_id = require_current_organization_id()
+    
     # Check if product exists
     product = db.query(Product).filter(Product.id == stock.product_id).first()
     if not product:
@@ -88,8 +114,15 @@ async def create_stock_entry(
             detail="Product not found"
         )
     
+    # Ensure tenant access for non-super-admin users
+    if not current_user.is_super_admin:
+        TenantQueryMixin.ensure_tenant_access(product, current_user.organization_id)
+    
     # Check if stock entry already exists
-    existing_stock = db.query(Stock).filter(Stock.product_id == stock.product_id).first()
+    existing_stock = db.query(Stock).filter(
+        Stock.product_id == stock.product_id,
+        Stock.organization_id == org_id
+    ).first()
     if existing_stock:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -97,7 +130,10 @@ async def create_stock_entry(
         )
     
     # Create new stock entry
-    db_stock = Stock(**stock.dict())
+    db_stock = Stock(
+        organization_id=org_id,
+        **stock.dict()
+    )
     db.add(db_stock)
     db.commit()
     db.refresh(db_stock)
