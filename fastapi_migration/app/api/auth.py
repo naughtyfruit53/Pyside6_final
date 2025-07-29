@@ -11,6 +11,7 @@ from app.core.tenant import get_organization_from_request, TenantContext
 from app.models.base import User, Organization
 from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse, PasswordChangeRequest, ForgotPasswordRequest, PasswordResetRequest, PasswordChangeResponse
 from app.services.email_service import email_service
+from app.services.otp_service import otp_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -533,13 +534,13 @@ async def forgot_password(
                 detail="User account is inactive"
             )
         
-        # TODO: Generate and send OTP for password reset
-        # otp = otp_service.create_otp_verification(db, forgot_data.email, "password_reset")
-        # if not otp:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #         detail="Failed to generate OTP. Please try again."
-        #     )
+        # Generate and send OTP for password reset
+        otp = otp_service.create_otp_verification(db, forgot_data.email, "password_reset")
+        if not otp:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate OTP. Please try again."
+            )
         
         logger.info(f"Password reset OTP requested for {forgot_data.email}")
         return OTPResponse(
@@ -563,12 +564,12 @@ async def reset_password(
 ):
     """Reset password using OTP"""
     try:
-        # TODO: Verify OTP for password reset
-        # if not otp_service.verify_otp(db, reset_data.email, reset_data.otp, "password_reset"):
-        #     raise HTTPException(
-        #         status_code=status.HTTP_401_UNAUTHORIZED,
-        #         detail="Invalid or expired OTP"
-        #     )
+        # Verify OTP for password reset
+        if not otp_service.verify_otp(db, reset_data.email, reset_data.otp, "password_reset"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired OTP"
+            )
         
         # Find user
         user = db.query(User).filter(User.email == reset_data.email).first()
