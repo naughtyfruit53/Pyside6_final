@@ -14,7 +14,7 @@ import { useRouter } from 'next/router';
 import { authService } from '../services/authService';
 
 interface LoginFormProps {
-  onLogin: (token: string) => void;
+  onLogin: (token: string, loginResponse?: any) => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
@@ -30,15 +30,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     
     try {
       const response = await authService.loginWithEmail(data.email, data.password);
-      onLogin(response.access_token);
       
       // Store user info
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user_role', response.user_role);
       localStorage.setItem('organization_id', response.organization_id?.toString() || '');
       
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Call parent callback with token and response
+      onLogin(response.access_token, response);
     } catch (error: any) {
       setError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
     } finally {

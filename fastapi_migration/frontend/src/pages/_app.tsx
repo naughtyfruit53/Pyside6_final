@@ -59,11 +59,14 @@ function MyApp({ Component, pageProps }: AppProps) {
     router.push('/login');
   };
 
+  // Check if current page should show MegaMenu
+  const showMegaMenu = user && router.pathname !== '/login' && router.pathname !== '/';
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Layout user={user} onLogout={handleLogout}>
+        <Layout user={user} onLogout={handleLogout} showMegaMenu={showMegaMenu}>
           <Component {...pageProps} />
         </Layout>
         <ToastContainer

@@ -10,6 +10,7 @@ from app.core.tenant import require_organization, TenantContext
 from app.models.base import Organization, User
 from app.schemas.base import (
     OrganizationCreate, OrganizationUpdate, OrganizationInDB,
+    OrganizationLicenseCreate, OrganizationLicenseResponse,
     UserCreate, UserInDB, UserRole
 )
 from app.api.auth import get_current_user, get_current_active_user
@@ -17,6 +18,126 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+@router.post("/license/create", response_model=OrganizationLicenseResponse, status_code=status.HTTP_201_CREATED)
+async def create_organization_license(
+    license_data: OrganizationLicenseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create organization license with auto-generated details (Super admin only)"""
+    # Only super admins can create organization licenses
+    if not current_user.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super administrators can create organization licenses"
+        )
+    
+    try:
+        import secrets
+        import string
+        import re
+        
+        # Generate subdomain from organization name
+        subdomain_base = re.sub(r'[^a-zA-Z0-9]', '', license_data.organization_name.lower())
+        subdomain_base = subdomain_base[:15] if len(subdomain_base) > 15 else subdomain_base
+        
+        # Ensure subdomain is unique
+        counter = 0
+        subdomain = subdomain_base
+        while db.query(Organization).filter(Organization.subdomain == subdomain).first():
+            counter += 1
+            subdomain = f"{subdomain_base}{counter}"
+        
+        # Generate temporary password
+        alphabet = string.ascii_letters + string.digits
+        temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+        
+        # Check if organization name already exists
+        existing_org = db.query(Organization).filter(
+            Organization.name == license_data.organization_name
+        ).first()
+        if existing_org:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organization name already exists"
+            )
+        
+        # Check if superadmin email already exists
+        existing_user = db.query(User).filter(
+            User.email == license_data.superadmin_email
+        ).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already exists in the system"
+            )
+        
+        # Create organization with minimal required details
+        org = Organization(
+            name=license_data.organization_name,
+            subdomain=subdomain,
+            business_type="Other",
+            primary_email=license_data.superadmin_email,
+            primary_phone="+91-0000000000",  # Placeholder
+            address1="To be updated",  # Placeholder
+            city="To be updated",  # Placeholder
+            state="To be updated",  # Placeholder
+            pin_code="000000",  # Placeholder
+            status="trial",
+            plan_type="trial",
+            max_users=5,
+            storage_limit_gb=1,
+            features={}
+        )
+        
+        db.add(org)
+        db.flush()  # Get the organization ID
+        
+        # Create superadmin user
+        admin_user = User(
+            organization_id=org.id,
+            email=license_data.superadmin_email,
+            username=license_data.superadmin_email.split("@")[0],
+            hashed_password=get_password_hash(temp_password),
+            full_name="Administrator",
+            role=UserRole.ORG_ADMIN,
+            is_active=True,
+            must_change_password=True  # Force password change on first login
+        )
+        
+        db.add(admin_user)
+        db.commit()
+        db.refresh(org)
+        
+        # TODO: Send confirmation email with login details
+        # email_service.send_organization_license_created_email(
+        #     license_data.superadmin_email,
+        #     license_data.organization_name,
+        #     subdomain,
+        #     temp_password
+        # )
+        
+        logger.info(f"Created organization license {org.name} with admin {admin_user.email}")
+        
+        return OrganizationLicenseResponse(
+            message="Organization license created successfully",
+            organization_id=org.id,
+            organization_name=org.name,
+            superadmin_email=license_data.superadmin_email,
+            subdomain=subdomain,
+            temp_password=temp_password
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating organization license: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating organization license"
+        )
 
 @router.post("/", response_model=OrganizationInDB, status_code=status.HTTP_201_CREATED)
 async def create_organization(
