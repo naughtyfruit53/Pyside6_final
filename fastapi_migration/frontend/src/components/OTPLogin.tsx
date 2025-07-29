@@ -18,7 +18,7 @@ import { useRouter } from 'next/router';
 import { authService } from '../services/authService';
 
 interface OTPLoginProps {
-  onLogin: (token: string) => void;
+  onLogin: (token: string, loginResponse?: any) => void;
 }
 
 const OTPLogin: React.FC<OTPLoginProps> = ({ onLogin }) => {
@@ -57,15 +57,14 @@ const OTPLogin: React.FC<OTPLoginProps> = ({ onLogin }) => {
     try {
       const response = await authService.verifyOTP(userEmail, data.otp);
       setSuccess('Login successful!');
-      onLogin(response.access_token);
       
       // Store user info
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user_role', response.user_role);
       localStorage.setItem('organization_id', response.organization_id?.toString() || '');
       
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Call parent callback with token and response
+      onLogin(response.access_token, response);
     } catch (error: any) {
       setError(error.response?.data?.detail || 'Invalid OTP. Please try again.');
     } finally {

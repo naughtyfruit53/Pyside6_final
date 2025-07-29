@@ -37,20 +37,30 @@ import {
   Storage,
   Build,
   ReceiptLong,
-  NoteAdd
+  NoteAdd,
+  AddBusiness,
+  DeveloperMode
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
+import CreateOrganizationLicenseModal from './CreateOrganizationLicenseModal';
 
 interface MegaMenuProps {
   user?: any;
   onLogout: () => void;
+  isVisible?: boolean;
 }
 
-const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
+const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [createLicenseModalOpen, setCreateLicenseModalOpen] = useState(false);
   const router = useRouter();
+
+  // Don't render if not visible
+  if (!isVisible) {
+    return null;
+  }
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, menuName: string) => {
     setAnchorEl(event.currentTarget);
@@ -74,6 +84,24 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
     router.push(path);
     handleMenuClose();
   };
+
+  const handleCreateOrgLicense = () => {
+    // For now, we'll use a state to control the modal
+    // In a full implementation, this would be managed by parent component
+    setCreateLicenseModalOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDemoMode = () => {
+    // Enable demo mode - this could set a global state or localStorage flag
+    localStorage.setItem('demoMode', 'true');
+    // Optionally show a notification or redirect
+    alert('Demo mode activated!');
+    handleMenuClose();
+  };
+
+  // Check if user is superadmin
+  const isSuperAdmin = user?.email === 'naughtyfruit53@gmail.com' || user?.is_super_admin;
 
   // Add keyboard event listener for Escape key
   useEffect(() => {
@@ -341,6 +369,28 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
             >
               Settings
             </Button>
+
+            {/* Superadmin Menu Options */}
+            {isSuperAdmin && (
+              <>
+                <Button
+                  color="inherit"
+                  startIcon={<AddBusiness />}
+                  onClick={handleCreateOrgLicense}
+                  sx={{ mx: 1 }}
+                >
+                  Create Organization License
+                </Button>
+                <Button
+                  color="inherit"
+                  startIcon={<DeveloperMode />}
+                  onClick={handleDemoMode}
+                  sx={{ mx: 1 }}
+                >
+                  Demo
+                </Button>
+              </>
+            )}
           </Box>
 
           {/* User Menu */}
@@ -379,6 +429,16 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout }) => {
           Logout
         </MenuItem>
       </Menu>
+
+      {/* Organization License Creation Modal */}
+      <CreateOrganizationLicenseModal
+        open={createLicenseModalOpen}
+        onClose={() => setCreateLicenseModalOpen(false)}
+        onSuccess={(result) => {
+          console.log('License created:', result);
+          // You might want to show a success notification here
+        }}
+      />
     </>
   );
 };

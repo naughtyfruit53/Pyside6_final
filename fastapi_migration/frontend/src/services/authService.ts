@@ -410,4 +410,69 @@ export const reportsService = {
   },
 };
 
+export const organizationService = {
+  createLicense: async (data: { organization_name: string; superadmin_email: string }) => {
+    try {
+      const response = await api.post('/organizations/license/create', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to create organization license');
+    }
+  },
+
+  getCurrentOrganization: async () => {
+    try {
+      const response = await api.get('/organizations/current');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get current organization');
+    }
+  },
+
+  updateOrganization: async (data: any) => {
+    try {
+      const response = await api.put('/organizations/current', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update organization');
+    }
+  },
+};
+
+export const passwordService = {
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      const response = await api.post('/auth/password/change', {
+        current_password: currentPassword,
+        new_password: newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to change password');
+    }
+  },
+
+  forgotPassword: async (email: string) => {
+    try {
+      const response = await api.post('/auth/password/forgot', { email });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to send password reset email');
+    }
+  },
+
+  resetPassword: async (email: string, otp: string, newPassword: string) => {
+    try {
+      const response = await api.post('/auth/password/reset', {
+        email,
+        otp,
+        new_password: newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to reset password');
+    }
+  },
+};
+
 export default api;

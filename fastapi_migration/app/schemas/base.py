@@ -98,6 +98,52 @@ class OrganizationInDB(OrganizationBase):
     financial_year_start: str = "04/01"
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+class OrganizationLicenseCreate(BaseModel):
+    organization_name: str
+    superadmin_email: EmailStr
+    
+    @validator('organization_name')
+    def validate_organization_name(cls, v):
+        if len(v.strip()) < 3:
+            raise ValueError('Organization name must be at least 3 characters long')
+        return v.strip()
+
+class OrganizationLicenseResponse(BaseModel):
+    message: str
+    organization_id: int
+    organization_name: str
+    superadmin_email: str
+    subdomain: str
+    temp_password: str
+
+# Password change and reset schemas
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+    
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+    
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
+class PasswordChangeResponse(BaseModel):
+    message: str
     
     class Config:
         orm_mode = True
@@ -161,6 +207,8 @@ class Token(BaseModel):
     organization_id: Optional[int] = None
     organization_name: Optional[str] = None
     user_role: Optional[str] = None
+    must_change_password: bool = False
+    is_first_login: bool = False
 
 class TokenData(BaseModel):
     email: Optional[str] = None

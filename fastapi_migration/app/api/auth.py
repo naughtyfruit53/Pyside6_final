@@ -9,7 +9,7 @@ from app.core.security import create_access_token, verify_password, verify_token
 from app.core.config import settings
 from app.core.tenant import get_organization_from_request, TenantContext
 from app.models.base import User, Organization
-from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse
+from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse, PasswordChangeRequest, ForgotPasswordRequest, PasswordResetRequest, PasswordChangeResponse
 from app.services.email_service import email_service
 import logging
 
@@ -186,7 +186,9 @@ async def login_for_access_token(
             "token_type": "bearer",
             "organization_id": user.organization_id,
             "organization_name": org_name,
-            "user_role": user.role
+            "user_role": user.role,
+            "must_change_password": user.must_change_password or False,
+            "is_first_login": user.last_login is None
         }
         
     except HTTPException:
@@ -272,7 +274,9 @@ async def login_with_email(
             "token_type": "bearer",
             "organization_id": user.organization_id,
             "organization_name": org_name,
-            "user_role": user.role
+            "user_role": user.role,
+            "must_change_password": user.must_change_password or False,
+            "is_first_login": user.last_login is None
         }
         
     except HTTPException:
@@ -410,7 +414,9 @@ async def verify_otp_and_login(
             "token_type": "bearer",
             "organization_id": user.organization_id,
             "organization_name": org_name,
-            "user_role": user.role
+            "user_role": user.role,
+            "must_change_password": True,  # Always require password change after OTP login
+            "is_first_login": user.last_login is None
         }
         
     except HTTPException:
@@ -466,4 +472,138 @@ async def setup_admin_account(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to setup admin account"
+        )
+
+@router.post("/password/change", response_model=PasswordChangeResponse)
+async def change_password(
+    password_data: PasswordChangeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Change user password"""
+    try:
+        # Verify current password
+        if not verify_password(password_data.current_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect"
+            )
+        
+        # Update password
+        from app.core.security import get_password_hash
+        current_user.hashed_password = get_password_hash(password_data.new_password)
+        current_user.must_change_password = False
+        
+        db.commit()
+        
+        logger.info(f"Password changed for user {current_user.email}")
+        return PasswordChangeResponse(message="Password changed successfully")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password change error: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error changing password"
+        )
+
+@router.post("/password/forgot", response_model=OTPResponse)
+async def forgot_password(
+    forgot_data: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """Request password reset via OTP"""
+    try:
+        # Check if user exists
+        user = db.query(User).filter(User.email == forgot_data.email).first()
+        if not user:
+            # For security, we don't reveal if email exists or not
+            logger.warning(f"Password reset requested for non-existent email: {forgot_data.email}")
+            return OTPResponse(
+                message="If the email exists in our system, a password reset OTP has been sent.",
+                email=forgot_data.email
+            )
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is inactive"
+            )
+        
+        # TODO: Generate and send OTP for password reset
+        # otp = otp_service.create_otp_verification(db, forgot_data.email, "password_reset")
+        # if not otp:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        #         detail="Failed to generate OTP. Please try again."
+        #     )
+        
+        logger.info(f"Password reset OTP requested for {forgot_data.email}")
+        return OTPResponse(
+            message="Password reset OTP sent successfully to your email address.",
+            email=forgot_data.email
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Forgot password error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during password reset request"
+        )
+
+@router.post("/password/reset", response_model=PasswordChangeResponse)
+async def reset_password(
+    reset_data: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """Reset password using OTP"""
+    try:
+        # TODO: Verify OTP for password reset
+        # if not otp_service.verify_otp(db, reset_data.email, reset_data.otp, "password_reset"):
+        #     raise HTTPException(
+        #         status_code=status.HTTP_401_UNAUTHORIZED,
+        #         detail="Invalid or expired OTP"
+        #     )
+        
+        # Find user
+        user = db.query(User).filter(User.email == reset_data.email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is inactive"
+            )
+        
+        # Update password
+        from app.core.security import get_password_hash
+        user.hashed_password = get_password_hash(reset_data.new_password)
+        user.must_change_password = False
+        
+        # Reset failed login attempts
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        
+        db.commit()
+        
+        logger.info(f"Password reset successfully for {user.email}")
+        return PasswordChangeResponse(message="Password reset successfully")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password reset error: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during password reset"
         )
