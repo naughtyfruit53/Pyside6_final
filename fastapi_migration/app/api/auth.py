@@ -1,13 +1,16 @@
-# api.auth.py (revised)
+"""
+Authentication and authorization endpoints
+"""
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
+from typing import Optional  # Added missing import
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password, verify_token
 from app.core.config import settings
-from app.core.tenant import get_organization_from_request, TenantContext
+from app.core.tenant import TenantContext, TenantQueryMixin, get_organization_from_request  # Import shared tenant utils
 from app.models.base import User, Organization
 from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse, PasswordChangeRequest, ForgotPasswordRequest, PasswordResetRequest, PasswordChangeResponse
 from app.services.email_service import email_service
@@ -90,6 +93,44 @@ async def get_current_super_admin(
             detail="Super administrator access required"
         )
     return current_user
+
+# Moved from tenant.py to break circular import
+def get_current_organization_id(current_user: User = Depends(get_current_active_user)) -> Optional[int]:
+    """Get current organization ID from context or user"""
+    org_id = TenantContext.get_organization_id()
+    if org_id is not None:
+        return org_id
+    
+    if current_user.organization_id:
+        TenantContext.set_organization_id(current_user.organization_id)
+        return current_user.organization_id
+    
+    if current_user.is_super_admin:
+        # For super admins, organization ID can be None
+        return None
+    
+    raise HTTPException(
+        status_code=400,
+        detail="No organization associated with user"
+    )
+
+def require_current_organization_id(current_user: User = Depends(get_current_active_user)) -> int:
+    """Get current organization ID, raise error if not set or for super admin without specification"""
+    org_id = get_current_organization_id(current_user)
+    
+    if org_id is None:
+        if current_user.is_super_admin:
+            raise HTTPException(
+                status_code=400,
+                detail="Super admin must specify organization ID"
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="No organization context available"
+            )
+    
+    return org_id
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(

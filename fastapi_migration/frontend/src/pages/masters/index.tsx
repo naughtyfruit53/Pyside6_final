@@ -1,3 +1,5 @@
+// Revised masters.index.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import {
@@ -159,13 +161,14 @@ const MasterDataManagement: React.FC = () => {
       case 'customers': setTabValue(1); break;
       case 'products': setTabValue(2); break;
       case 'accounts': setTabValue(3); break;
+      case 'company': setTabValue(4); break;
       default: setTabValue(0);
     }
   }, [tab]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    const tabNames = ['vendors', 'customers', 'products', 'accounts'];
+    const tabNames = ['vendors', 'customers', 'products', 'accounts', 'company'];
     router.replace(`/masters?tab=${tabNames[newValue]}`, undefined, { shallow: true });
   };
 
@@ -178,6 +181,7 @@ const MasterDataManagement: React.FC = () => {
   const { data: vendors, isLoading: vendorsLoading } = useQuery('vendors', masterDataService.getVendors, { enabled: tabValue === 0 });
   const { data: customers, isLoading: customersLoading } = useQuery('customers', masterDataService.getCustomers, { enabled: tabValue === 1 });
   const { data: products, isLoading: productsLoading } = useQuery('products', masterDataService.getProducts, { enabled: tabValue === 2 });
+  const { data: company } = useQuery('company', masterDataService.getCompany, { enabled: tabValue === 4 }); // Assuming getCompany for /companies/current
 
   // Mutations for bulk import
   const importVendorsMutation = useMutation(bulkImportVendors, {
@@ -355,6 +359,14 @@ const MasterDataManagement: React.FC = () => {
       color: '#F57C00',
       icon: <AccountBalance />,
       tabIndex: 3
+    },
+    {
+      title: 'Company Details',
+      description: 'Your company information and settings',
+      count: company ? 1 : 0,
+      color: '#1976D2',
+      icon: <Business />,
+      tabIndex: 4
     }
   ];
 
@@ -501,6 +513,72 @@ const MasterDataManagement: React.FC = () => {
     );
   };
 
+  const renderCompanyDetails = () => {
+    return (
+      <Box>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Company Details
+        </Typography>
+        {company ? (
+          <Paper sx={{ p: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">Name</Typography>
+                <Typography>{company.name}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">Business Type</Typography>
+                <Typography>{company.business_type}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">Industry</Typography>
+                <Typography>{company.industry}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">Website</Typography>
+                <Typography>{company.website}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">Primary Email</Typography>
+                <Typography>{company.primary_email}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">Primary Phone</Typography>
+                <Typography>{company.primary_phone}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2">Address</Typography>
+                <Typography>
+                  {company.address1}, {company.address2}, {company.city}, {company.state} {company.pin_code}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">GST Number</Typography>
+                <Typography>{company.gst_number}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2">PAN Number</Typography>
+                <Typography>{company.pan_number}</Typography>
+              </Grid>
+            </Grid>
+            <Button
+              variant="contained"
+              startIcon={<Edit />}
+              sx={{ mt: 3 }}
+              onClick={() => openCompanyEditDialog()}
+            >
+              Edit Company Details
+            </Button>
+          </Paper>
+        ) : (
+          <Alert severity="info">
+            No company details found. Please set up your company information.
+          </Alert>
+        )}
+      </Box>
+    );
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
 
@@ -516,37 +594,39 @@ const MasterDataManagement: React.FC = () => {
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {masterDataTypes.map((dataType, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Box sx={{ color: dataType.color, mr: 1 }}>
-                          {dataType.icon}
+              <Grid item xs={12} sm={6} md={3} key={index}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Box sx={{ color: dataType.color, mr: 1 }}>
+                            {dataType.icon}
+                          </Box>
+                          <Typography color="textSecondary" gutterBottom>
+                            {dataType.title}
+                          </Typography>
                         </Box>
-                        <Typography color="textSecondary" gutterBottom>
-                          {dataType.title}
+                        <Typography variant="h4" component="h2">
+                          {dataType.count}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {dataType.description}
                         </Typography>
                       </Box>
-                      <Typography variant="h4" component="h2">
-                        {dataType.count}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {dataType.description}
-                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        sx={{ bgcolor: dataType.color }}
+                        size="small"
+                        onClick={() => openItemDialog(null, dataType.tabIndex)}
+                      >
+                        Add
+                      </Button>
                     </Box>
-                    <Button
-                      variant="contained"
-                      startIcon={<Add />}
-                      sx={{ bgcolor: dataType.color }}
-                      size="small"
-                      onClick={() => openItemDialog(null, dataType.tabIndex)}
-                    >
-                      Add
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           ))}
         </Grid>
@@ -559,6 +639,7 @@ const MasterDataManagement: React.FC = () => {
               <Tab label="Customers" />
               <Tab label="Products" />
               <Tab label="Accounts" />
+              <Tab label="Company" />
             </Tabs>
           </Box>
 
@@ -603,6 +684,10 @@ const MasterDataManagement: React.FC = () => {
               </Button>
             </Box>
             {renderTable([], 'accounts', false)} {/* TODO: Implement accounts API */}
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={4}>
+            {renderCompanyDetails()}
           </TabPanel>
         </Paper>
 

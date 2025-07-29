@@ -3,8 +3,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_admin_user
-from app.core.tenant import TenantQueryMixin, require_current_organization_id
+from app.api.auth import get_current_active_user, get_current_admin_user, require_current_organization_id  # Updated import for require_current_organization_id
+from app.core.tenant import TenantQueryMixin
 from app.models.base import User, Vendor
 from app.schemas.base import VendorCreate, VendorUpdate, VendorInDB, BulkImportResponse
 from app.services.excel_service import VendorExcelService, ExcelService
@@ -265,17 +265,17 @@ async def import_vendors_excel(
             try:
                 # Map Excel columns to model fields
                 vendor_data = {
-                    "name": record.get("Name", "").strip(),
-                    "contact_number": record.get("Contact Number", "").strip(),
-                    "email": record.get("Email", "").strip() or None,
-                    "address1": record.get("Address Line 1", "").strip(),
-                    "address2": record.get("Address Line 2", "").strip() or None,
-                    "city": record.get("City", "").strip(),
-                    "state": record.get("State", "").strip(),
-                    "pin_code": record.get("Pin Code", "").strip(),
-                    "state_code": record.get("State Code", "").strip(),
-                    "gst_number": record.get("GST Number", "").strip() or None,
-                    "pan_number": record.get("PAN Number", "").strip() or None,
+                    "name": record.get("name", "").strip(),
+                    "contact_number": record.get("contact_number", "").strip(),
+                    "email": record.get("email", "").strip() or None,
+                    "address1": record.get("address_line_1", "").strip(),
+                    "address2": record.get("address_line_2", "").strip() or None,
+                    "city": record.get("city", "").strip(),
+                    "state": record.get("state", "").strip(),
+                    "pin_code": record.get("pin_code", "").strip(),
+                    "state_code": record.get("state_code", "").strip(),
+                    "gst_number": record.get("gst_number", "").strip() or None,
+                    "pan_number": record.get("pan_number", "").strip() or None,
                 }
                 
                 # Validate required fields

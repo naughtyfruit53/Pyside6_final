@@ -21,12 +21,12 @@ class Settings(BaseSettings):
     SUPABASE_KEY: Optional[str] = None
     SUPABASE_SERVICE_KEY: Optional[str] = None
     
-    # Email Settings
-    SMTP_HOST: str = "smtp.gmail.com"
+    # Email Settings (Required for OTP)
+    SMTP_HOST: str = "smtp.gmail.com"  # Changed back to SMTP_HOST to match .env
     SMTP_PORT: int = 587
-    SMTP_USERNAME: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM_EMAIL: Optional[str] = None
+    SMTP_USERNAME: str  # Required: Your Gmail or SMTP user email
+    SMTP_PASSWORD: str  # Required: Your Gmail app password or SMTP password
+    EMAILS_FROM_EMAIL: str  # Required: Sender email (same as SMTP_USERNAME)
     EMAILS_FROM_NAME: str = "TRITIQ ERP"
     
     # SendGrid (Alternative email service)

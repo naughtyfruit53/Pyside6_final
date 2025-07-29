@@ -1,3 +1,5 @@
+// Revised pages/MegaMenu.tsx
+
 import React, { useState, useEffect } from 'react';
 import {
   AppBar,
@@ -183,7 +185,8 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
           items: [
             { name: 'Vendors', path: '/masters/vendors', icon: <People /> },
             { name: 'Customers', path: '/masters/customers', icon: <Business /> },
-            { name: 'Employees', path: '/masters/employees', icon: <People /> }
+            { name: 'Employees', path: '/masters/employees', icon: <People /> },
+            { name: 'Company Details', path: '/masters/company-details', icon: <Business /> },
           ]
         },
         {

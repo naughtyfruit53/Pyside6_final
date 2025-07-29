@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self):
-        self.smtp_server = getattr(settings, 'SMTP_SERVER', 'smtp.gmail.com')
+        self.smtp_server = getattr(settings, 'SMTP_HOST', 'smtp.gmail.com')  # Updated to SMTP_HOST
         self.smtp_port = getattr(settings, 'SMTP_PORT', 587)
         self.smtp_username = getattr(settings, 'SMTP_USERNAME', '')
         self.smtp_password = getattr(settings, 'SMTP_PASSWORD', '')
@@ -30,6 +30,9 @@ class EmailService:
     def _send_email(self, to_email: str, subject: str, body: str) -> bool:
         """Internal method to send an email via SMTP."""
         try:
+            if not self.smtp_username or not self.smtp_password:
+                raise ValueError("SMTP credentials are not configured properly")
+            
             msg = MIMEMultipart()
             msg['From'] = self.smtp_username
             msg['To'] = to_email
@@ -37,16 +40,15 @@ class EmailService:
             
             msg.attach(MIMEText(body, 'plain'))
             
-            # For demo purposes, log instead of sending
+            # Log for debugging
             logger.info(f"Sending email to {to_email}: Subject: {subject}\nBody: {body}")
-            print(f"Sending email to {to_email}: Subject: {subject}\nBody: {body}")  # Console output for demo
             
-            # In production, uncomment and use actual SMTP sending:
-            # server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-            # server.starttls()
-            # server.login(self.smtp_username, self.smtp_password)
-            # server.sendmail(self.smtp_username, to_email, msg.as_string())
-            # server.quit()
+            # Actual SMTP sending (uncommented for production)
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            server.starttls()
+            server.login(self.smtp_username, self.smtp_password)
+            server.sendmail(self.smtp_username, to_email, msg.as_string())
+            server.quit()
             
             return True
         except Exception as e:

@@ -9,6 +9,8 @@ from typing import Optional
 from sqlalchemy.orm import Session
 import logging
 
+from app.services.email_service import email_service  # Import for sending email
+
 logger = logging.getLogger(__name__)
 
 class SimpleOTPService:
@@ -33,13 +35,16 @@ class SimpleOTPService:
                 'attempts': 0
             }
             
-            # TODO: Send email with OTP
-            # For testing, log the OTP
-            logger.info(f"OTP for {email} ({purpose}): {otp}")
+            # Send OTP email using email_service
+            if email_service.send_otp_email(email, otp, purpose):
+                logger.info(f"OTP {otp} sent to {email} for {purpose}")
+                return otp
+            else:
+                logger.error(f"Failed to send OTP to {email} for {purpose}")
+                return None
             
-            return otp
         except Exception as e:
-            logger.error(f"Failed to create OTP for {email}: {e}")
+            logger.error(f"Failed to create OTP verification for {email}: {e}")
             return None
     
     def verify_otp(self, db: Session, email: str, otp: str, purpose: str = "login") -> bool:

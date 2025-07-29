@@ -1,3 +1,5 @@
+# Revised core.tenant.py
+
 """
 Multi-tenant context and middleware for tenant isolation
 """
@@ -156,17 +158,13 @@ async def require_organization(
     TenantContext.set_organization_id(org.id)
     return org
 
-def get_current_organization_id() -> Optional[int]:
-    """Get current organization ID from context"""
-    return TenantContext.get_organization_id()
-
 def require_current_organization_id() -> int:
-    """Get current organization ID, raise error if not set"""
+    """Require and get current organization ID from context"""
     org_id = TenantContext.get_organization_id()
     if org_id is None:
         raise HTTPException(
-            status_code=500,
-            detail="Organization context not set"
+            status_code=400,
+            detail="No current organization specified"
         )
     return org_id
 

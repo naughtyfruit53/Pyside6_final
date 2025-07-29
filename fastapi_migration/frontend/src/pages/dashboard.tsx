@@ -1,4 +1,6 @@
-import React from 'react';
+// Revised pages/dashboard.tsx
+
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -26,9 +28,11 @@ import {
 import { useRouter } from 'next/router';
 import { voucherService, masterDataService } from '../services/authService';
 import { useQuery } from 'react-query';
+import CompanyDetailsModal from '../components/CompanyDetailsModal';
 
 export default function Dashboard() {
   const router = useRouter();
+  const [showCompanyModal, setShowCompanyModal] = useState<boolean>(false);
 
   const { data: purchaseVouchers } = useQuery('purchaseVouchers', () =>
     voucherService.getPurchaseVouchers({ limit: 5 })
@@ -41,6 +45,27 @@ export default function Dashboard() {
   const { data: lowStock } = useQuery('lowStock', () =>
     masterDataService.getLowStock()
   );
+
+  const { data: company, isError, error } = useQuery('company', () =>
+    masterDataService.getCompany(), // Assuming masterDataService has getCompany which calls /companies/current
+    { retry: false }
+  );
+
+  useEffect(() => {
+    if (isError && (error as any).response?.status === 404) {
+      setShowCompanyModal(true);
+    }
+  }, [isError, error]);
+
+  const handleModalClose = () => {
+    setShowCompanyModal(false);
+  };
+
+  const handleModalSuccess = () => {
+    setShowCompanyModal(false);
+    // Refetch company data
+    // useQuery will automatically refetch if needed, or invalidate if using queryClient
+  };
 
   const stats = [
     {
@@ -213,6 +238,12 @@ export default function Dashboard() {
           </Grid>
         </Grid>
       </Container>
+      <CompanyDetailsModal
+        open={showCompanyModal}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
+        isRequired={true}
+      />
     </Box>
   );
 }

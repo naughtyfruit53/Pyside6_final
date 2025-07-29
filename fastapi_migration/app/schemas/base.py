@@ -1,3 +1,5 @@
+# Revised schemas/base.py
+
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -146,7 +148,7 @@ class PasswordChangeResponse(BaseModel):
     message: str
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -194,7 +196,7 @@ class UserInDB(UserBase):
     last_login: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -267,7 +269,7 @@ class CompanyInDB(CompanyBase):
     updated_at: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Vendor schemas
 class VendorBase(BaseModel):
@@ -308,7 +310,7 @@ class VendorInDB(VendorBase):
     updated_at: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Customer schemas (same structure as Vendor)
 class CustomerBase(BaseModel):
@@ -349,7 +351,7 @@ class CustomerInDB(CustomerBase):
     updated_at: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Product schemas
 class ProductBase(BaseModel):
@@ -389,7 +391,7 @@ class ProductInDB(ProductBase):
     updated_at: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Stock schemas
 class StockBase(BaseModel):
@@ -412,7 +414,10 @@ class StockInDB(StockBase):
     last_updated: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class BulkStockRequest(BaseModel):
+    items: List[Dict[str, Any]]
 
 # Email notification schemas
 class EmailNotificationBase(BaseModel):
@@ -434,7 +439,7 @@ class EmailNotificationInDB(EmailNotificationBase):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Payment term schemas
 class PaymentTermBase(BaseModel):
@@ -457,7 +462,7 @@ class PaymentTermInDB(PaymentTermBase):
     is_active: bool = True
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Bulk import/export response schemas
 class BulkImportResponse(BaseModel):

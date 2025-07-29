@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_admin_user, get_current_super_admin
-from app.core.tenant import TenantQueryMixin, require_current_organization_id
+from app.api.auth import get_current_active_user, get_current_admin_user, get_current_super_admin, get_current_organization_id, require_current_organization_id  # Updated import
+from app.core.tenant import TenantQueryMixin  # Keep for TenantQueryMixin
 from app.models.base import User, Organization
 from app.schemas.base import UserCreate, UserUpdate, UserInDB, UserRole
 from app.core.security import get_password_hash
@@ -59,7 +59,7 @@ async def get_user(
     if current_user.role not in [UserRole.ORG_ADMIN, UserRole.ADMIN] and not current_user.is_super_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
+            detail="Not enough permissions. Admin access required."
         )
     
     user = db.query(User).filter(User.id == user_id).first()

@@ -264,16 +264,16 @@ async def import_products_excel(
             try:
                 # Map Excel columns to model fields
                 product_data = {
-                    "name": record.get("Name", "").strip(),
-                    "hsn_code": record.get("HSN Code", "").strip(),
-                    "part_number": record.get("Part Number", "").strip(),
-                    "unit": record.get("Unit", "").strip(),
-                    "unit_price": float(record.get("Unit Price", 0)),
-                    "gst_rate": float(record.get("GST Rate", 0)),
-                    "is_gst_inclusive": str(record.get("Is GST Inclusive", "")).upper() in ["TRUE", "YES", "1"],
-                    "reorder_level": int(float(record.get("Reorder Level", 0))),
-                    "description": record.get("Description", "").strip(),
-                    "is_manufactured": str(record.get("Is Manufactured", "")).upper() in ["TRUE", "YES", "1"],
+                    "name": record.get("name", "").strip(),
+                    "hsn_code": record.get("hsn_code", "").strip(),
+                    "part_number": record.get("part_number", "").strip(),
+                    "unit": record.get("unit", "").strip(),
+                    "unit_price": float(record.get("unit_price", 0)),
+                    "gst_rate": float(record.get("gst_rate", 0)),
+                    "is_gst_inclusive": str(record.get("is_gst_inclusive", "")).upper() in ["TRUE", "YES", "1"],
+                    "reorder_level": int(float(record.get("reorder_level", 0))),
+                    "description": record.get("description", "").strip(),
+                    "is_manufactured": str(record.get("is_manufactured", "")).upper() in ["TRUE", "YES", "1"],
                 }
                 
                 # Validate required fields

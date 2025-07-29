@@ -1,3 +1,5 @@
+# Revised api/stock.py
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -270,12 +272,14 @@ async def bulk_import_stock(
             )
             db.add(stock)
             created_stocks += 1
+            logger.info(f"Created stock entry for: {product.name}")
         else:
             # Update existing stock
             stock.quantity = item.quantity or stock.quantity
             stock.unit = item.unit or stock.unit
             stock.location = item.location or stock.location
             updated_stocks += 1
+            logger.info(f"Updated stock for: {product.name}")
         
         # Update product details if provided
         if item.hsn_code is not None:
@@ -290,8 +294,7 @@ async def bulk_import_stock(
     db.commit()
     
     logger.info(f"Bulk import completed by {current_user.email}: "
-                f"{created_products} products created, "
-                f"{created_stocks} stocks created, "
+                f"{created_products} products created, {created_stocks} stocks created, "
                 f"{updated_stocks} stocks updated")
     
     return {
@@ -392,9 +395,9 @@ async def import_stock_excel(
         for i, record in enumerate(records, 1):
             try:
                 # Extract product and stock data
-                product_name = record.get("Product Name", "").strip()
-                unit = record.get("Unit", "").strip()
-                quantity = float(record.get("Quantity", 0))
+                product_name = record.get("product_name", "").strip()
+                unit = record.get("unit", "").strip()
+                quantity = float(record.get("quantity", 0))
                 
                 # Validate required fields
                 if not product_name:
@@ -416,12 +419,12 @@ async def import_stock_excel(
                     try:
                         product_data = {
                             "name": product_name,
-                            "hsn_code": record.get("HSN Code", "").strip(),
-                            "part_number": record.get("Part Number", "").strip(),
+                            "hsn_code": record.get("hsn_code", "").strip(),
+                            "part_number": record.get("part_number", "").strip(),
                             "unit": unit,
-                            "unit_price": float(record.get("Unit Price", 0)),
-                            "gst_rate": float(record.get("GST Rate", 18.0)),
-                            "reorder_level": int(float(record.get("Reorder Level", 10))),
+                            "unit_price": float(record.get("unit_price", 0)),
+                            "gst_rate": float(record.get("gst_rate", 18.0)),
+                            "reorder_level": int(float(record.get("reorder_level", 10))),
                             "is_active": True
                         }
                         
@@ -448,7 +451,7 @@ async def import_stock_excel(
                 stock_data = {
                     "quantity": quantity,
                     "unit": unit,
-                    "location": record.get("Location", "").strip()
+                    "location": record.get("location", "").strip()
                 }
                 
                 if not stock:
@@ -467,32 +470,6 @@ async def import_stock_excel(
                         setattr(stock, field, value)
                     updated_stocks += 1
                     logger.info(f"Updated stock for: {product_name}")
-                
-                # Update product details if provided in the Excel
-                product_updates = {}
-                if record.get("HSN Code", "").strip():
-                    product_updates["hsn_code"] = record.get("HSN Code", "").strip()
-                if record.get("Part Number", "").strip():
-                    product_updates["part_number"] = record.get("Part Number", "").strip()
-                if record.get("Unit Price"):
-                    try:
-                        product_updates["unit_price"] = float(record.get("Unit Price"))
-                    except (ValueError, TypeError):
-                        pass
-                if record.get("GST Rate"):
-                    try:
-                        product_updates["gst_rate"] = float(record.get("GST Rate"))
-                    except (ValueError, TypeError):
-                        pass
-                if record.get("Reorder Level"):
-                    try:
-                        product_updates["reorder_level"] = int(float(record.get("Reorder Level")))
-                    except (ValueError, TypeError):
-                        pass
-                
-                # Apply product updates
-                for field, value in product_updates.items():
-                    setattr(product, field, value)
                     
             except (ValueError, TypeError) as e:
                 errors.append(f"Row {i}: Invalid data format - {str(e)}")

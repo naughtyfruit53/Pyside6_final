@@ -48,11 +48,12 @@ class ExcelService:
                 raise HTTPException(status_code=400, detail="Excel file is empty")
             
             # Clean column names (strip whitespace, normalize)
-            df.columns = df.columns.str.strip()
+            df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Validate expected columns if provided
             if expected_columns:
-                missing_cols = set(expected_columns) - set(df.columns)
+                normalized_expected = [col.lower().replace(' ', '_') for col in expected_columns]
+                missing_cols = set(normalized_expected) - set(df.columns)
                 if missing_cols:
                     raise HTTPException(
                         status_code=400, 
@@ -60,20 +61,22 @@ class ExcelService:
                     )
             
             # Convert to list of dictionaries, handling NaN values
-            records = df.fillna('').to_dict('records')
+            records = df.replace({pd.NA: None, float('nan'): None}).to_dict('records')
             
             # Clean up records - remove empty rows
             cleaned_records = []
             for record in records:
-                # Skip rows where all values are empty
-                if any(str(v).strip() for v in record.values() if v is not None):
-                    # Convert values to appropriate types and clean
+                # Skip rows where all values are empty/None
+                if any(value is not None and str(value).strip() for value in record.values()):
+                    # Clean values
                     cleaned_record = {}
                     for key, value in record.items():
-                        if pd.isna(value) or value == '':
+                        if value is None or (isinstance(value, str) and not value.strip()):
                             cleaned_record[key] = None
+                        elif isinstance(value, str):
+                            cleaned_record[key] = value.strip()
                         else:
-                            cleaned_record[key] = str(value).strip() if isinstance(value, str) else value
+                            cleaned_record[key] = value
                     cleaned_records.append(cleaned_record)
             
             return cleaned_records

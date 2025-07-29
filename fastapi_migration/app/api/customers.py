@@ -1,10 +1,12 @@
+# Revised api.customers.py
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
 from app.api.auth import get_current_active_user, get_current_admin_user
-from app.core.tenant import TenantQueryMixin, require_current_organization_id
+from app.core.tenant import TenantQueryMixin
 from app.models.base import User, Customer
 from app.schemas.base import CustomerCreate, CustomerUpdate, CustomerInDB, BulkImportResponse
 from app.services.excel_service import CustomerExcelService, ExcelService
@@ -28,7 +30,9 @@ async def get_customers(
     
     # Apply tenant filtering for non-super-admin users
     if not current_user.is_super_admin:
-        org_id = require_current_organization_id()
+        org_id = current_user.organization_id
+        if not org_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User must belong to an organization")
         query = TenantQueryMixin.filter_by_tenant(query, Customer, org_id)
     
     if active_only:
@@ -73,7 +77,9 @@ async def create_customer(
 ):
     """Create new customer"""
     
-    org_id = require_current_organization_id()
+    org_id = current_user.organization_id
+    if not org_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User must belong to an organization to create customers")
     
     # Check if customer name already exists in organization
     existing_customer = db.query(Customer).filter(
@@ -194,7 +200,9 @@ async def export_customers_excel(
     
     # Apply tenant filtering for non-super-admin users
     if not current_user.is_super_admin:
-        org_id = require_current_organization_id()
+        org_id = current_user.organization_id
+        if not org_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User must belong to an organization")
         query = TenantQueryMixin.filter_by_tenant(query, Customer, org_id)
     
     if active_only:
@@ -238,7 +246,9 @@ async def import_customers_excel(
 ):
     """Import customers from Excel file"""
     
-    org_id = require_current_organization_id()
+    org_id = current_user.organization_id
+    if not org_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User must belong to an organization to import customers")
     
     # Validate file type
     if not file.filename.endswith(('.xlsx', '.xls')):

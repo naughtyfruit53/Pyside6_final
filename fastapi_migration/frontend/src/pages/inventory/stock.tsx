@@ -1,3 +1,5 @@
+// Revised inventory.stock.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api, { masterDataService, companyService } from '../../services/authService';
@@ -82,6 +84,10 @@ const StockManagement: React.FC = () => {
 
   const handleSaveManual = () => {
     updateStockMutation.mutate(manualFormData);
+  };
+
+  const handleDownloadTemplate = () => {
+    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/stock/template/excel`, '_blank');
   };
 
   const handleImport = () => {
@@ -225,6 +231,11 @@ const StockManagement: React.FC = () => {
           <Grid item>
             <Button variant="contained" startIcon={<Add />} onClick={handleManualEntry}>
               Manual Entry
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button variant="contained" startIcon={<GetApp />} onClick={handleDownloadTemplate}>
+              Download Template
             </Button>
           </Grid>
           <Grid item>
