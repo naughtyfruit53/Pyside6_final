@@ -212,37 +212,6 @@ export default function Dashboard() {
             </Paper>
           </Grid>
         </Grid>
-
-        {/* Recent Activity Summary */}
-        <Paper sx={{ mt: 4, p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Recent Activity
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary" paragraph>
-                • Latest vouchers created today
-              </Typography>
-              <Typography variant="body2" color="textSecondary" paragraph>
-                • Pending approvals and reviews
-              </Typography>
-              <Typography variant="body2" color="textSecondary" paragraph>
-                • Low stock alerts and notifications
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="textSecondary" paragraph>
-                • System performance and health
-              </Typography>
-              <Typography variant="body2" color="textSecondary" paragraph>
-                • Recent user activities and logins
-              </Typography>
-              <Typography variant="body2" color="textSecondary" paragraph>
-                • Data backup and sync status
-              </Typography>
-            </Grid>
-          </Grid>
-        </Paper>
       </Container>
     </Box>
   );

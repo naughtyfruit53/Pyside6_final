@@ -154,6 +154,8 @@ const LoginPage: React.FC = () => {
         onClose={() => setPasswordChangeOpen(false)}
         onSuccess={handlePasswordChangeSuccess}
         isRequired={requirePasswordChange}
+      />
+
       {/* Company Details Modal (for first login) */}
       <CompanyDetailsModal
         open={companyDetailsOpen}

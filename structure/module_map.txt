@@ -5,14 +5,7 @@ fastapi_migration/
 │   │   ├── main.py
 │   │   ├── __init__.py
 │   │   ├── api/
-│   │   │	 ├── vouchers/
-│   │   │	 │	    ├── __init__.py
-│   │   │   │ 		├── sales.py
-│   │   │   │ 		├── email.py
-│   │   │   │ 		├── purchase.py
-│   │   │   │ 		├── accounting.py
-│   │   │   │ 		├── notes.py
-│   │   │   │ 		├── quotes.py
+│   │   │   ├── .vouchers.py
 │   │   │   ├── auth.py
 │   │   │   ├── companies.py
 │   │   │   ├── customers.py
@@ -23,6 +16,14 @@ fastapi_migration/
 │   │   │   ├── users.py
 │   │   │   ├── vendors.py
 │   │   │   ├── __init__.py
+│   │   │   ├── vouchers/
+│   │   │   │   ├── accounting.py
+│   │   │   │   ├── email.py
+│   │   │   │   ├── notes.py
+│   │   │   │   ├── purchase.py
+│   │   │   │   ├── quotes.py
+│   │   │   │   ├── sales.py
+│   │   │   │   ├── __init__.py
 │   │   ├── core/
 │   │   │   ├── config.py
 │   │   │   ├── database.py
@@ -40,18 +41,14 @@ fastapi_migration/
 │   │   │   ├── __init__.py
 │   │   ├── services/
 │   │   │   ├── email_service.py
+│   │   │   ├── excel_service.py
+│   │   │   ├── otp_service.py
 │   │   │   ├── security_services.py
 │   │   │   ├── __init__.py
+│   │   ├── templates/
+│   │   │   ├── excel/
 │   │   ├── utils/
 │   │   │   ├── __init__.py
-│   │   ├── vouchers/
-│   │   │   ├── __init__.py
-│   │   │   ├── sales.py
-│   │   │   ├── email.py
-│   │   │   ├── purchase.py
-│   │   │   ├── accounting.py
-│   │   │   ├── notes.py
-│   │   │   ├── quotes.py
 │   ├── frontend/
 │   │   ├── src/
 │   │   │   ├── components/
@@ -65,15 +62,12 @@ fastapi_migration/
 │   │   │   │   ├── inventory/
 │   │   │   │   ├── masters/
 │   │   │   │   ├── vouchers/
-│   │   │   │   │	  ├── Purchase-Vouchers/
-│   │   │   │   │	  │		├── grn.tsx
-│   │   │   │   │	  │		├── purchase-order.tsx
-│   │   │   │   │	  │		├── purchase-voucher.tsx
-│   │   │   │   │	  │		├── rejection-in.tsx
+│   │   │   │   │   ├── Pre-Sales-Voucher/
+│   │   │   │   │   ├── Purchase-Vouchers/
 │   │   │   │   │   ├── Sales-Vouchers/
-│   │   │   │   │	  │		├── sales-voucher.tsx
 │   │   │   ├── services/
 │   │   │   ├── utils/
+│   │   │   │   ├── apiUtils.py
 │   ├── migrations/
 │   │   ├── env.py
 │   │   ├── versions/
@@ -82,4 +76,6 @@ fastapi_migration/
 │   ├── structure/
 │   ├── tests/
 │   │   ├── test_multitenant.py
+│   │   ├── test_organization_license.py
+│   │   ├── test_password_management.py
 │   │   ├── __init__.py

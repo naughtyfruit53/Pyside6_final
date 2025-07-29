@@ -1,4 +1,3 @@
-# app/api/stock.py
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -7,7 +6,8 @@ from app.core.database import get_db
 from app.api.auth import get_current_active_user
 from app.core.tenant import TenantQueryMixin, require_current_organization_id
 from app.models.base import User, Stock, Product
-from app.schemas.base import StockCreate, StockUpdate, StockInDB, ProductCreate, BulkImportResponse
+from app.schemas.stock import StockCreate, StockUpdate, StockInDB, BulkStockRequest, BulkImportResponse  # Updated imports
+from app.schemas.base import ProductCreate  # Keep if needed, or move to stock.py
 from app.services.excel_service import StockExcelService, ExcelService
 import logging
 
@@ -223,7 +223,7 @@ async def adjust_stock(
 
 @router.post("/bulk")
 async def bulk_import_stock(
-    stock_items: List[dict],
+    request: BulkStockRequest,  # Updated to use the new request model
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -232,23 +232,23 @@ async def bulk_import_stock(
     created_stocks = 0
     updated_stocks = 0
     
-    for item in stock_items:
+    for item in request.items:  # Access items from the request
         # Check if product exists by name (assuming name is unique)
-        product = db.query(Product).filter(Product.name == item.get('product_name')).first()
+        product = db.query(Product).filter(Product.name == item.product_name).first()
         
         if not product:
             # Create new product if not exists
-            if not item.get('product_name'):
+            if not item.product_name:
                 logger.warning(f"Skipping item without product_name: {item}")
                 continue
                 
             new_product = Product(
-                name=item['product_name'],
-                hsn_code=item.get('hsn_code', ''),
-                unit=item.get('unit', 'PCS'),
-                unit_price=item.get('unit_price', 0.0),
-                gst_rate=item.get('gst_rate', 18.0),
-                reorder_level=item.get('reorder_level', 10),
+                name=item.product_name,
+                hsn_code=item.hsn_code or '',
+                unit=item.unit or 'PCS',
+                unit_price=item.unit_price or 0.0,
+                gst_rate=item.gst_rate or 18.0,
+                reorder_level=item.reorder_level or 10,
                 is_active=True
             )
             db.add(new_product)
@@ -264,28 +264,28 @@ async def bulk_import_stock(
             # Create new stock
             stock = Stock(
                 product_id=product.id,
-                quantity=item.get('quantity', 0.0),
-                unit=item.get('unit', product.unit),
-                location=item.get('location', '')
+                quantity=item.quantity or 0.0,
+                unit=item.unit or product.unit,
+                location=item.location or ''
             )
             db.add(stock)
             created_stocks += 1
         else:
             # Update existing stock
-            stock.quantity = item.get('quantity', stock.quantity)
-            stock.unit = item.get('unit', stock.unit)
-            stock.location = item.get('location', stock.location)
+            stock.quantity = item.quantity or stock.quantity
+            stock.unit = item.unit or stock.unit
+            stock.location = item.location or stock.location
             updated_stocks += 1
         
         # Update product details if provided
-        if 'hsn_code' in item:
-            product.hsn_code = item['hsn_code']
-        if 'unit_price' in item:
-            product.unit_price = item['unit_price']
-        if 'gst_rate' in item:
-            product.gst_rate = item['gst_rate']
-        if 'reorder_level' in item:
-            product.reorder_level = item['reorder_level']
+        if item.hsn_code is not None:
+            product.hsn_code = item.hsn_code
+        if item.unit_price is not None:
+            product.unit_price = item.unit_price
+        if item.gst_rate is not None:
+            product.gst_rate = item.gst_rate
+        if item.reorder_level is not None:
+            product.reorder_level = item.reorder_level
     
     db.commit()
     
@@ -299,7 +299,7 @@ async def bulk_import_stock(
         "created_products": created_products,
         "created_stocks": created_stocks,
         "updated_stocks": updated_stocks,
-        "total_processed": len(stock_items)
+        "total_processed": len(request.items)
     }
 
 # Excel Import/Export/Template endpoints

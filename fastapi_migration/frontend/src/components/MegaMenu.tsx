@@ -57,6 +57,21 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
   const [createLicenseModalOpen, setCreateLicenseModalOpen] = useState(false);
   const router = useRouter();
 
+  // Add keyboard event listener for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleMenuClose();
+        handleUserMenuClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Don't render if not visible
   if (!isVisible) {
     return null;
@@ -102,21 +117,6 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
 
   // Check if user is superadmin
   const isSuperAdmin = user?.email === 'naughtyfruit53@gmail.com' || user?.is_super_admin;
-
-  // Add keyboard event listener for Escape key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleMenuClose();
-        handleUserMenuClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   // Enhanced logo navigation function
   const navigateToHome = () => {
