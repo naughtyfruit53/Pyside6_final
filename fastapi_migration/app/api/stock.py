@@ -395,8 +395,8 @@ async def import_stock_excel(
         for i, record in enumerate(records, 1):
             try:
                 # Extract product and stock data
-                product_name = record.get("product_name", "").strip()
-                unit = record.get("unit", "").strip()
+                product_name = str(record.get("product_name", "")).strip()
+                unit = str(record.get("unit", "")).strip()
                 quantity = float(record.get("quantity", 0))
                 
                 # Validate required fields
@@ -419,8 +419,8 @@ async def import_stock_excel(
                     try:
                         product_data = {
                             "name": product_name,
-                            "hsn_code": record.get("hsn_code", "").strip(),
-                            "part_number": record.get("part_number", "").strip(),
+                            "hsn_code": str(record.get("hsn_code", "")).strip(),
+                            "part_number": str(record.get("part_number", "")).strip(),
                             "unit": unit,
                             "unit_price": float(record.get("unit_price", 0)),
                             "gst_rate": float(record.get("gst_rate", 18.0)),
@@ -451,7 +451,7 @@ async def import_stock_excel(
                 stock_data = {
                     "quantity": quantity,
                     "unit": unit,
-                    "location": record.get("location", "").strip()
+                    "location": str(record.get("location", "")).strip()
                 }
                 
                 if not stock:
