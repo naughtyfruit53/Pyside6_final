@@ -177,6 +177,8 @@ class ProductExcelService:
         {"name": "Reorder Level", "field": "reorder_level", "example": "50", "width": 15},
         {"name": "Description", "field": "description", "example": "High quality steel bolt", "width": 25},
         {"name": "Is Manufactured", "field": "is_manufactured", "example": "FALSE", "width": 15},
+        {"name": "Initial Quantity", "field": "initial_quantity", "example": "100", "width": 15},
+        {"name": "Initial Location", "field": "initial_location", "example": "Warehouse A", "width": 15},
     ]
     
     REQUIRED_COLUMNS = ["Name", "Unit", "Unit Price"]
