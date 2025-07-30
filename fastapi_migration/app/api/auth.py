@@ -216,11 +216,13 @@ async def login_for_access_token(
             expires_delta=access_token_expires
         )
         
-        # Get organization name for response
+        # Get organization name and company details status for response
         org_name = None
+        company_details_completed = True  # Default for super admin
         if user.organization_id:
             org = db.query(Organization).filter(Organization.id == user.organization_id).first()
             org_name = org.name if org else None
+            company_details_completed = org.company_details_completed if org else False
         
         logger.info(f"User {user.email} logged in successfully")
         return {
@@ -230,6 +232,7 @@ async def login_for_access_token(
             "organization_name": org_name,
             "user_role": user.role,
             "must_change_password": user.must_change_password or False,
+            "company_details_completed": company_details_completed,
             "is_first_login": user.last_login is None
         }
         
@@ -303,11 +306,13 @@ async def login_with_email(
             expires_delta=access_token_expires
         )
         
-        # Get organization name
+        # Get organization name and company details status
         org_name = None
+        company_details_completed = True  # Default for super admin
         if user.organization_id:
             org = db.query(Organization).filter(Organization.id == user.organization_id).first()
             org_name = org.name if org else None
+            company_details_completed = org.company_details_completed if org else False
         
         logger.info(f"User {user.email} logged in successfully via email")
         return {
@@ -317,6 +322,7 @@ async def login_with_email(
             "organization_name": org_name,
             "user_role": user.role,
             "must_change_password": user.must_change_password or False,
+            "company_details_completed": company_details_completed,
             "is_first_login": user.last_login is None
         }
         
@@ -443,11 +449,13 @@ async def verify_otp_and_login(
             expires_delta=access_token_expires
         )
         
-        # Get organization name
+        # Get organization name and company details status
         org_name = None
+        company_details_completed = True  # Default for super admin
         if user.organization_id:
             org = db.query(Organization).filter(Organization.id == user.organization_id).first()
             org_name = org.name if org else None
+            company_details_completed = org.company_details_completed if org else False
         
         logger.info(f"User {user.email} logged in successfully via OTP")
         return {
@@ -457,6 +465,7 @@ async def verify_otp_and_login(
             "organization_name": org_name,
             "user_role": user.role,
             "must_change_password": True,  # Always require password change after OTP login
+            "company_details_completed": company_details_completed,
             "is_first_login": user.last_login is None
         }
         

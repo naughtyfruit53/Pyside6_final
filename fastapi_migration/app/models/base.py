@@ -48,6 +48,9 @@ class Organization(Base):
     date_format = Column(String, default="DD/MM/YYYY")
     financial_year_start = Column(String, default="04/01")  # April 1st
     
+    # Onboarding status
+    company_details_completed = Column(Boolean, default=False)  # Track if company details have been filled
+    
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
