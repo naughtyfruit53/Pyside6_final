@@ -5,7 +5,8 @@ from app.core.database import get_db
 from app.api.auth import get_current_active_user, get_current_admin_user, require_current_organization_id
 from app.core.tenant import TenantQueryMixin
 from app.models.base import User, Company
-from app.schemas.base import CompanyCreate, CompanyUpdate, CompanyInDB
+from app.schemas.base import CompanyCreate as BaseCompanyCreate, CompanyUpdate as BaseCompanyUpdate, CompanyInDB as BaseCompanyInDB
+from app.schemas.company import CompanyCreate, CompanyUpdate, CompanyInDB, CompanyResponse, CompanyErrorResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -70,13 +71,13 @@ async def get_company(
     
     return company
 
-@router.post("/", response_model=CompanyInDB)
+@router.post("/", response_model=CompanyResponse)
 async def create_company(
     company: CompanyCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
-    """Create company details for current organization"""
+    """Create company details for current organization with enhanced validation"""
     
     org_id = require_current_organization_id()
     
@@ -88,25 +89,34 @@ async def create_company(
             detail="Company details already exist for this organization. Use update endpoint instead."
         )
     
-    db_company = Company(
-        organization_id=org_id,
-        **company.dict()
-    )
-    db.add(db_company)
-    db.commit()
-    db.refresh(db_company)
-    
-    logger.info(f"Company {company.name} created for org {org_id} by {current_user.email}")
-    return db_company
+    try:
+        db_company = Company(
+            organization_id=org_id,
+            **company.model_dump()
+        )
+        db.add(db_company)
+        db.commit()
+        db.refresh(db_company)
+        
+        logger.info(f"Company {company.name} created for org {org_id} by {current_user.email}")
+        return db_company
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating company: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create company. Please try again."
+        )
 
-@router.put("/{company_id}", response_model=CompanyInDB)
+@router.put("/{company_id}", response_model=CompanyResponse)
 async def update_company(
     company_id: int,
     company_update: CompanyUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
-    """Update company details"""
+    """Update company details with enhanced validation"""
     
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
@@ -118,14 +128,23 @@ async def update_company(
     if not current_user.is_super_admin:
         TenantQueryMixin.ensure_tenant_access(company, current_user.organization_id)
     
-    for field, value in company_update.dict(exclude_unset=True).items():
-        setattr(company, field, value)
-    
-    db.commit()
-    db.refresh(company)
-    
-    logger.info(f"Company {company.name} updated by {current_user.email}")
-    return company
+    try:
+        for field, value in company_update.model_dump(exclude_unset=True).items():
+            setattr(company, field, value)
+        
+        db.commit()
+        db.refresh(company)
+        
+        logger.info(f"Company {company.name} updated by {current_user.email}")
+        return company
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating company: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update company. Please try again."
+        )
 
 @router.delete("/{company_id}")
 async def delete_company(
