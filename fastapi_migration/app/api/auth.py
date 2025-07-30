@@ -238,7 +238,6 @@ async def login_for_access_token(
         if 'user' in locals() and user:
             user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
             if user.failed_login_attempts >= 5:
-                from datetime import datetime, timedelta
                 user.locked_until = datetime.utcnow() + timedelta(minutes=30)
             db.commit()
         raise
