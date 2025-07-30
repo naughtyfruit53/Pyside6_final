@@ -37,6 +37,7 @@ fastapi_migration/
 │   │   │   ├── __init__.py
 │   │   ├── schemas/
 │   │   │   ├── base.py
+│   │   │   ├── stock.py
 │   │   │   ├── vouchers.py
 │   │   │   ├── __init__.py
 │   │   ├── services/
@@ -66,6 +67,7 @@ fastapi_migration/
 │   │   │   │   │   ├── Purchase-Vouchers/
 │   │   │   │   │   ├── Sales-Vouchers/
 │   │   │   ├── services/
+│   │   │   ├── types/
 │   │   │   ├── utils/
 │   │   │   │   ├── apiUtils.py
 │   ├── migrations/
@@ -75,6 +77,7 @@ fastapi_migration/
 │   │   │   ├── 002_voucher_tables.py
 │   ├── structure/
 │   ├── tests/
+│   │   ├── test_excel_features.py
 │   │   ├── test_multitenant.py
 │   │   ├── test_organization_license.py
 │   │   ├── test_password_management.py

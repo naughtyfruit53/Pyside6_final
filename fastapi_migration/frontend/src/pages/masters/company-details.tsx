@@ -1,7 +1,7 @@
 // Generated masters/CompanyDetails.tsx
 
-import React from 'react';
-import { Box, Paper, Typography, Grid, Button } from '@mui/material';
+import React, { useState } from 'react';  // Updated: Added useState
+import { Box, Paper, Typography, Grid, Button, Alert } from '@mui/material';  // Updated: Added Alert
 import { Edit } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 import { masterDataService } from '../../services/authService';
@@ -85,3 +85,5 @@ const CompanyDetails: React.FC = () => {
     </Box>
   );
 };
+
+export default CompanyDetails;  // Moved to the end

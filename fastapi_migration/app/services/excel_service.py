@@ -15,7 +15,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class ExcelService:
     """Service class for Excel operations"""
     
@@ -162,7 +161,6 @@ class ExcelService:
         excel_buffer.seek(0)
         return excel_buffer.getvalue()
 
-
 class ProductExcelService:
     """Excel service specifically for Products"""
     
@@ -191,7 +189,6 @@ class ProductExcelService:
     def export_products(products: List[Dict[str, Any]]) -> bytes:
         return ExcelService.export_data_to_excel(products, ProductExcelService.COLUMNS, "products_export.xlsx")
 
-
 class VendorExcelService:
     """Excel service specifically for Vendors"""
     
@@ -218,7 +215,6 @@ class VendorExcelService:
     @staticmethod
     def export_vendors(vendors: List[Dict[str, Any]]) -> bytes:
         return ExcelService.export_data_to_excel(vendors, VendorExcelService.COLUMNS, "vendors_export.xlsx")
-
 
 class CustomerExcelService:
     """Excel service specifically for Customers"""
@@ -247,19 +243,18 @@ class CustomerExcelService:
     def export_customers(customers: List[Dict[str, Any]]) -> bytes:
         return ExcelService.export_data_to_excel(customers, CustomerExcelService.COLUMNS, "customers_export.xlsx")
 
-
 class StockExcelService:
     """Excel service specifically for Stock/Inventory"""
     
     COLUMNS = [
         {"name": "Product Name", "field": "product_name", "example": "Steel Bolt M8x50", "width": 25},
+        {"name": "Quantity", "field": "quantity", "example": "100", "width": 12},
+        {"name": "Unit", "field": "unit", "example": "PCS", "width": 10},
         {"name": "HSN Code", "field": "hsn_code", "example": "73181590", "width": 12},
         {"name": "Part Number", "field": "part_number", "example": "SB-M8-50", "width": 15},
-        {"name": "Unit", "field": "unit", "example": "PCS", "width": 10},
         {"name": "Unit Price", "field": "unit_price", "example": "25.50", "width": 12},
         {"name": "GST Rate", "field": "gst_rate", "example": "18.0", "width": 12},
         {"name": "Reorder Level", "field": "reorder_level", "example": "50", "width": 15},
-        {"name": "Quantity", "field": "quantity", "example": "100", "width": 12},
         {"name": "Location", "field": "location", "example": "Warehouse A-1", "width": 18},
     ]
     

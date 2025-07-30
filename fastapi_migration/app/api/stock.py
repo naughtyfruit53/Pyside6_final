@@ -8,8 +8,8 @@ from app.core.database import get_db
 from app.api.auth import get_current_active_user
 from app.core.tenant import TenantQueryMixin, require_current_organization_id
 from app.models.base import User, Stock, Product
-from app.schemas.stock import StockCreate, StockUpdate, StockInDB, BulkStockRequest, BulkImportResponse  # Updated imports
-from app.schemas.base import ProductCreate  # Keep if needed, or move to stock.py
+from app.schemas.stock import StockCreate, StockUpdate, StockInDB, BulkImportResponse
+from app.schemas.base import ProductCreate
 from app.services.excel_service import StockExcelService, ExcelService
 import logging
 
@@ -223,94 +223,168 @@ async def adjust_stock(
     logger.info(f"Stock adjusted for product ID {product_id}: {quantity_change:+.2f} - {reason} by {current_user.email}")
     return {"message": f"Stock adjusted by {quantity_change:+.2f}", "new_quantity": stock.quantity}
 
-@router.post("/bulk")
+@router.post("/bulk", response_model=BulkImportResponse)
 async def bulk_import_stock(
-    request: BulkStockRequest,  # Updated to use the new request model
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Bulk import stock entries, creating products if they don't exist"""
-    created_products = 0
-    created_stocks = 0
-    updated_stocks = 0
+    """Bulk import stock entries from Excel file, creating products if they don't exist"""
+    org_id = require_current_organization_id()
     
-    for item in request.items:  # Access items from the request
-        # Check if product exists by name (assuming name is unique)
-        product = db.query(Product).filter(Product.name == item.product_name).first()
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only Excel files (.xlsx, .xls) are allowed"
+        )
+    
+    try:
+        # Parse Excel file
+        records = await ExcelService.parse_excel_file(file, StockExcelService.REQUIRED_COLUMNS)
         
-        if not product:
-            # Create new product if not exists
-            if not item.product_name:
-                logger.warning(f"Skipping item without product_name: {item}")
-                continue
+        if not records:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No data found in Excel file"
+            )
+        
+        created_products = 0
+        created_stocks = 0
+        updated_stocks = 0
+        errors = []
+        
+        for i, record in enumerate(records, 1):
+            try:
+                # Extract product and stock data
+                product_name = str(record.get("product_name", "")).strip()
+                unit = str(record.get("unit", "")).strip()
+                quantity = float(record.get("quantity", 0))
                 
-            new_product = Product(
-                name=item.product_name,
-                hsn_code=item.hsn_code or '',
-                unit=item.unit or 'PCS',
-                unit_price=item.unit_price or 0.0,
-                gst_rate=item.gst_rate or 18.0,
-                reorder_level=item.reorder_level or 10,
-                is_active=True
-            )
-            db.add(new_product)
-            db.flush()  # Get the new product ID
-            product = new_product
-            created_products += 1
-            logger.info(f"Created new product: {new_product.name}")
+                # Validate required fields
+                if not product_name:
+                    errors.append(f"Row {i}: Product Name is required")
+                    continue
+                    
+                if not unit:
+                    errors.append(f"Row {i}: Unit is required")
+                    continue
+                
+                # Log record details for debugging
+                logger.debug(f"Processing row {i}: product_name={product_name}, unit={unit}, quantity={quantity}")
+                
+                # Check if product exists by name
+                product = db.query(Product).filter(
+                    Product.name == product_name,
+                    Product.organization_id == org_id
+                ).first()
+                
+                if not product:
+                    # Create new product if not exists
+                    try:
+                        product_data = {
+                            "name": product_name,
+                            "hsn_code": str(record.get("hsn_code", "")).strip(),
+                            "part_number": str(record.get("part_number", "")).strip(),
+                            "unit": unit,
+                            "unit_price": float(record.get("unit_price", 0)),
+                            "gst_rate": float(record.get("gst_rate", 18.0)),
+                            "reorder_level": int(float(record.get("reorder_level", 10))),
+                            "is_active": True
+                        }
+                        
+                        new_product = Product(
+                            organization_id=org_id,
+                            **product_data
+                        )
+                        db.add(new_product)
+                        db.flush()  # Get the new product ID
+                        product = new_product
+                        created_products += 1
+                        logger.info(f"Created new product: {product_name}")
+                        
+                    except (ValueError, TypeError) as e:
+                        errors.append(f"Row {i}: Invalid product data - {str(e)}")
+                        logger.error(f"Row {i}: Failed to create product - {str(e)}")
+                        continue
+                
+                # Handle stock
+                stock = db.query(Stock).filter(
+                    Stock.product_id == product.id,
+                    Stock.organization_id == org_id
+                ).first()
+                
+                stock_data = {
+                    "quantity": quantity,
+                    "unit": unit,
+                    "location": str(record.get("location", "")).strip()
+                }
+                
+                if not stock:
+                    # Create new stock entry
+                    new_stock = Stock(
+                        organization_id=org_id,
+                        product_id=product.id,
+                        **stock_data
+                    )
+                    db.add(new_stock)
+                    created_stocks += 1
+                    logger.info(f"Created stock entry for: {product_name}")
+                else:
+                    # Update existing stock
+                    for field, value in stock_data.items():
+                        setattr(stock, field, value)
+                    updated_stocks += 1
+                    logger.info(f"Updated stock for: {product_name}")
+                    
+            except (ValueError, TypeError) as e:
+                errors.append(f"Row {i}: Invalid data format - {str(e)}")
+                logger.error(f"Row {i}: Invalid data format - {str(e)}")
+                continue
+            except Exception as e:
+                errors.append(f"Row {i}: Error processing record - {str(e)}")
+                logger.error(f"Row {i}: Error processing record - {str(e)}")
+                continue
         
-        # Handle stock
-        stock = db.query(Stock).filter(Stock.product_id == product.id).first()
+        # Commit all changes
+        db.commit()
         
-        if not stock:
-            # Create new stock
-            stock = Stock(
-                product_id=product.id,
-                quantity=item.quantity or 0.0,
-                unit=item.unit or product.unit,
-                location=item.location or ''
-            )
-            db.add(stock)
-            created_stocks += 1
-            logger.info(f"Created stock entry for: {product.name}")
-        else:
-            # Update existing stock
-            stock.quantity = item.quantity or stock.quantity
-            stock.unit = item.unit or stock.unit
-            stock.location = item.location or stock.location
-            updated_stocks += 1
-            logger.info(f"Updated stock for: {product.name}")
+        logger.info(f"Stock import completed by {current_user.email}: "
+                   f"{created_products} products created, {created_stocks} stocks created, "
+                   f"{updated_stocks} stocks updated, {len(errors)} errors")
         
-        # Update product details if provided
-        if item.hsn_code is not None:
-            product.hsn_code = item.hsn_code
-        if item.unit_price is not None:
-            product.unit_price = item.unit_price
-        if item.gst_rate is not None:
-            product.gst_rate = item.gst_rate
-        if item.reorder_level is not None:
-            product.reorder_level = item.reorder_level
-    
-    db.commit()
-    
-    logger.info(f"Bulk import completed by {current_user.email}: "
-                f"{created_products} products created, {created_stocks} stocks created, "
-                f"{updated_stocks} stocks updated")
-    
-    return {
-        "message": "Bulk import completed successfully",
-        "created_products": created_products,
-        "created_stocks": created_stocks,
-        "updated_stocks": updated_stocks,
-        "total_processed": len(request.items)
-    }
-
-# Excel Import/Export/Template endpoints
+        message_parts = []
+        if created_products > 0:
+            message_parts.append(f"{created_products} products created")
+        if created_stocks > 0:
+            message_parts.append(f"{created_stocks} stock entries created")
+        if updated_stocks > 0:
+            message_parts.append(f"{updated_stocks} stock entries updated")
+        if errors:
+            message_parts.append(f"{len(errors)} errors encountered")
+        
+        message = f"Import completed. {', '.join(message_parts)}."
+        
+        return BulkImportResponse(
+            message=message,
+            total_processed=len(records),
+            created=created_stocks,
+            updated=updated_stocks,
+            errors=errors
+        )
+        
+    except HTTPException as e:
+        logger.error(f"HTTP error during stock import: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Error importing stock: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing import: {str(e)}"
+        )
 
 @router.get("/template/excel")
-async def download_stock_template(
-    current_user: User = Depends(get_current_active_user)
-):
+async def download_stock_template():
     """Download Excel template for stock bulk import"""
     excel_data = StockExcelService.create_template()
     return ExcelService.create_streaming_response(excel_data, "stock_template.xlsx")
@@ -359,155 +433,3 @@ async def export_stock_excel(
     
     excel_data = StockExcelService.export_stock(stock_data)
     return ExcelService.create_streaming_response(excel_data, "stock_export.xlsx")
-
-@router.post("/import/excel", response_model=BulkImportResponse)
-async def import_stock_excel(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Import stock from Excel file with auto-product creation"""
-    
-    org_id = require_current_organization_id()
-    
-    # Validate file type
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are allowed"
-        )
-    
-    try:
-        # Parse Excel file
-        records = await ExcelService.parse_excel_file(file, StockExcelService.REQUIRED_COLUMNS)
-        
-        if not records:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No data found in Excel file"
-            )
-        
-        created_products = 0
-        created_stocks = 0
-        updated_stocks = 0
-        errors = []
-        
-        for i, record in enumerate(records, 1):
-            try:
-                # Extract product and stock data
-                product_name = str(record.get("product_name", "")).strip()
-                unit = str(record.get("unit", "")).strip()
-                quantity = float(record.get("quantity", 0))
-                
-                # Validate required fields
-                if not product_name:
-                    errors.append(f"Row {i}: Product Name is required")
-                    continue
-                    
-                if not unit:
-                    errors.append(f"Row {i}: Unit is required")
-                    continue
-                
-                # Check if product exists by name
-                product = db.query(Product).filter(
-                    Product.name == product_name,
-                    Product.organization_id == org_id
-                ).first()
-                
-                if not product:
-                    # Create new product if not exists
-                    try:
-                        product_data = {
-                            "name": product_name,
-                            "hsn_code": str(record.get("hsn_code", "")).strip(),
-                            "part_number": str(record.get("part_number", "")).strip(),
-                            "unit": unit,
-                            "unit_price": float(record.get("unit_price", 0)),
-                            "gst_rate": float(record.get("gst_rate", 18.0)),
-                            "reorder_level": int(float(record.get("reorder_level", 10))),
-                            "is_active": True
-                        }
-                        
-                        new_product = Product(
-                            organization_id=org_id,
-                            **product_data
-                        )
-                        db.add(new_product)
-                        db.flush()  # Get the new product ID
-                        product = new_product
-                        created_products += 1
-                        logger.info(f"Created new product: {product_name}")
-                        
-                    except (ValueError, TypeError) as e:
-                        errors.append(f"Row {i}: Invalid product data - {str(e)}")
-                        continue
-                
-                # Handle stock
-                stock = db.query(Stock).filter(
-                    Stock.product_id == product.id,
-                    Stock.organization_id == org_id
-                ).first()
-                
-                stock_data = {
-                    "quantity": quantity,
-                    "unit": unit,
-                    "location": str(record.get("location", "")).strip()
-                }
-                
-                if not stock:
-                    # Create new stock entry
-                    new_stock = Stock(
-                        organization_id=org_id,
-                        product_id=product.id,
-                        **stock_data
-                    )
-                    db.add(new_stock)
-                    created_stocks += 1
-                    logger.info(f"Created stock entry for: {product_name}")
-                else:
-                    # Update existing stock
-                    for field, value in stock_data.items():
-                        setattr(stock, field, value)
-                    updated_stocks += 1
-                    logger.info(f"Updated stock for: {product_name}")
-                    
-            except (ValueError, TypeError) as e:
-                errors.append(f"Row {i}: Invalid data format - {str(e)}")
-                continue
-            except Exception as e:
-                errors.append(f"Row {i}: Error processing record - {str(e)}")
-                continue
-        
-        # Commit all changes
-        db.commit()
-        
-        logger.info(f"Stock import completed by {current_user.email}: "
-                   f"{created_products} products created, {created_stocks} stocks created, "
-                   f"{updated_stocks} stocks updated, {len(errors)} errors")
-        
-        message_parts = []
-        if created_products > 0:
-            message_parts.append(f"{created_products} products created")
-        if created_stocks > 0:
-            message_parts.append(f"{created_stocks} stock entries created")
-        if updated_stocks > 0:
-            message_parts.append(f"{updated_stocks} stock entries updated")
-        
-        message = f"Import completed successfully. {', '.join(message_parts)}."
-        
-        return BulkImportResponse(
-            message=message,
-            total_processed=len(records),
-            created=created_stocks,
-            updated=updated_stocks,
-            errors=errors
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error importing stock: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing import: {str(e)}"
-        )
