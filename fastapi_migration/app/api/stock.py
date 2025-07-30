@@ -257,14 +257,21 @@ async def bulk_import_stock(
     org_id = require_current_organization_id()
     start_time = datetime.utcnow()
     
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only Excel files (.xlsx, .xls) are allowed"
+        )
+    
     try:
-        # Use the enhanced Excel importer
-        records, import_errors = await StockExcelImporter.import_from_file(file)
+        # Parse Excel file using existing service
+        records = await ExcelService.parse_excel_file(file, StockExcelService.REQUIRED_COLUMNS)
         
-        if not records and not import_errors:
+        if not records:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No valid data found in Excel file"
+                detail="No data found in Excel file"
             )
         
         created_products = 0
@@ -273,13 +280,64 @@ async def bulk_import_stock(
         skipped_records = 0
         detailed_errors = []
         warnings = []
+        simple_errors = []
         
         for i, record in enumerate(records, 1):
             try:
-                # Extract product and stock data
-                product_name = record.get("product_name")
-                unit = record.get("unit")
-                quantity = record.get("quantity", 0.0)
+                # Extract product and stock data with enhanced validation
+                product_name = str(record.get("product_name", "")).strip()
+                unit = str(record.get("unit", "")).strip()
+                
+                # Enhanced validation for required fields
+                if not product_name:
+                    detailed_errors.append(BulkImportError(
+                        row=i,
+                        field="product_name",
+                        value="",
+                        error="Product Name is required and cannot be empty",
+                        error_code="REQUIRED_FIELD_MISSING"
+                    ))
+                    simple_errors.append(f"Row {i}: Product Name is required and cannot be empty")
+                    skipped_records += 1
+                    continue
+                    
+                if not unit:
+                    detailed_errors.append(BulkImportError(
+                        row=i,
+                        field="unit",
+                        value="",
+                        error="Unit is required and cannot be empty",
+                        error_code="REQUIRED_FIELD_MISSING"
+                    ))
+                    simple_errors.append(f"Row {i}: Unit is required and cannot be empty")
+                    skipped_records += 1
+                    continue
+                
+                # Enhanced quantity validation
+                try:
+                    quantity = float(record.get("quantity", 0))
+                    if quantity < 0:
+                        detailed_errors.append(BulkImportError(
+                            row=i,
+                            field="quantity",
+                            value=str(record.get("quantity")),
+                            error="Quantity cannot be negative",
+                            error_code="INVALID_VALUE"
+                        ))
+                        simple_errors.append(f"Row {i}: Quantity cannot be negative")
+                        skipped_records += 1
+                        continue
+                except (ValueError, TypeError):
+                    detailed_errors.append(BulkImportError(
+                        row=i,
+                        field="quantity",
+                        value=str(record.get("quantity")),
+                        error=f"Invalid quantity value: {record.get('quantity')}",
+                        error_code="INVALID_DATA_TYPE"
+                    ))
+                    simple_errors.append(f"Row {i}: Invalid data format - could not convert string to float: '{record.get('quantity')}'")
+                    skipped_records += 1
+                    continue
                 
                 # Log record details for debugging
                 logger.debug(f"Processing row {i}: product_name={product_name}, unit={unit}, quantity={quantity}")
@@ -291,16 +349,48 @@ async def bulk_import_stock(
                 ).first()
                 
                 if not product:
-                    # Create new product if not exists
+                    # Create new product if not exists with enhanced validation
                     try:
+                        # Validate and clean optional fields
+                        hsn_code = str(record.get("hsn_code", "")).strip() or None
+                        part_number = str(record.get("part_number", "")).strip() or None
+                        
+                        # Validate numeric fields
+                        try:
+                            unit_price = float(record.get("unit_price", 0))
+                            if unit_price < 0:
+                                warnings.append(f"Row {i}: Unit price is negative for '{product_name}', setting to 0")
+                                unit_price = 0.0
+                        except (ValueError, TypeError):
+                            unit_price = 0.0
+                            warnings.append(f"Row {i}: Invalid unit price for '{product_name}', setting to 0")
+                        
+                        try:
+                            gst_rate = float(record.get("gst_rate", 18.0))
+                            if gst_rate < 0 or gst_rate > 100:
+                                warnings.append(f"Row {i}: Invalid GST rate for '{product_name}', setting to 18%")
+                                gst_rate = 18.0
+                        except (ValueError, TypeError):
+                            gst_rate = 18.0
+                            warnings.append(f"Row {i}: Invalid GST rate for '{product_name}', setting to 18%")
+                        
+                        try:
+                            reorder_level = int(float(record.get("reorder_level", 10)))
+                            if reorder_level < 0:
+                                reorder_level = 10
+                                warnings.append(f"Row {i}: Invalid reorder level for '{product_name}', setting to 10")
+                        except (ValueError, TypeError):
+                            reorder_level = 10
+                            warnings.append(f"Row {i}: Invalid reorder level for '{product_name}', setting to 10")
+                        
                         product_data = {
                             "name": product_name,
-                            "hsn_code": record.get("hsn_code"),
-                            "part_number": record.get("part_number"),
-                            "unit": unit,
-                            "unit_price": record.get("unit_price", 0.0),
-                            "gst_rate": record.get("gst_rate", 18.0),
-                            "reorder_level": record.get("reorder_level", 10),
+                            "hsn_code": hsn_code,
+                            "part_number": part_number,
+                            "unit": unit.upper(),
+                            "unit_price": unit_price,
+                            "gst_rate": gst_rate,
+                            "reorder_level": reorder_level,
                             "is_active": True
                         }
                         
@@ -322,19 +412,23 @@ async def bulk_import_stock(
                             error=f"Failed to create product: {str(e)}",
                             error_code="PRODUCT_CREATION_FAILED"
                         ))
+                        simple_errors.append(f"Row {i}: Invalid product data - {str(e)}")
                         logger.error(f"Row {i}: Failed to create product - {str(e)}")
+                        skipped_records += 1
                         continue
                 
-                # Handle stock
+                # Handle stock with enhanced validation
                 stock = db.query(Stock).filter(
                     Stock.product_id == product.id,
                     Stock.organization_id == org_id
                 ).first()
                 
+                location = str(record.get("location", "")).strip() or ""
+                
                 stock_data = {
                     "quantity": quantity,
-                    "unit": unit,
-                    "location": record.get("location", "")
+                    "unit": unit.upper(),
+                    "location": location
                 }
                 
                 if not stock:
@@ -365,27 +459,10 @@ async def bulk_import_stock(
                     error=f"Error processing record: {str(e)}",
                     error_code="PROCESSING_ERROR"
                 ))
+                simple_errors.append(f"Row {i}: Error processing record - {str(e)}")
                 logger.error(f"Row {i}: Error processing record - {str(e)}")
                 skipped_records += 1
                 continue
-        
-        # Add import errors to detailed errors
-        for error_msg in import_errors:
-            parts = error_msg.split(': ', 2)
-            if len(parts) >= 2 and parts[0].startswith('Row '):
-                row_num = int(parts[0].replace('Row ', ''))
-                error_detail = parts[1] if len(parts) == 2 else parts[2]
-                detailed_errors.append(BulkImportError(
-                    row=row_num,
-                    error=error_detail,
-                    error_code="VALIDATION_ERROR"
-                ))
-            else:
-                detailed_errors.append(BulkImportError(
-                    row=0,
-                    error=error_msg,
-                    error_code="IMPORT_ERROR"
-                ))
         
         # Commit all changes
         db.commit()
@@ -417,7 +494,7 @@ async def bulk_import_stock(
             created=created_stocks,
             updated=updated_stocks,
             skipped=skipped_records,
-            errors=[error.error for error in detailed_errors],
+            errors=simple_errors,
             detailed_errors=detailed_errors,
             warnings=warnings,
             processing_time_seconds=processing_time
