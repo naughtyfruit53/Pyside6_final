@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, Optional, List
 from pydantic_settings import BaseSettings
-from pydantic import validator
+from pydantic import field_validator, ConfigDict
 
 class Settings(BaseSettings):
     # App Settings
@@ -45,7 +45,8 @@ class Settings(BaseSettings):
     # Super Admin Configuration
     SUPER_ADMIN_EMAILS: List[str] = ["admin@tritiq.com", "superadmin@tritiq.com"]
     
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
@@ -57,8 +58,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True
+    )
 
 settings = Settings()

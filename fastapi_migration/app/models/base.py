@@ -69,7 +69,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Multi-tenant fields
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)  # Nullable for super admin
     
     # User credentials
     email = Column(String, nullable=False, index=True)
