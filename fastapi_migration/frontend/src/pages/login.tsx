@@ -11,8 +11,6 @@ import LoginForm from '../components/LoginForm';
 import OTPLogin from '../components/OTPLogin';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import PasswordChangeModal from '../components/PasswordChangeModal';
-import CompanySetupModal from '../components/CompanySetupModal';
-import { useCompany } from '../context/CompanyContext';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -41,7 +39,6 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const LoginPage: React.FC = () => {
-  const { checkCompanyDetails } = useCompany();
   const [tabValue, setTabValue] = useState(0);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false);
@@ -55,15 +52,18 @@ const LoginPage: React.FC = () => {
     // Store token
     localStorage.setItem('token', token);
     
+    // Store company details completion status
+    if (loginResponse?.company_details_completed !== undefined) {
+      localStorage.setItem('companyDetailsCompleted', loginResponse.company_details_completed.toString());
+    }
+    
     // Check if password change is required
     if (loginResponse?.must_change_password) {
       setRequirePasswordChange(true);
       setPasswordChangeOpen(true);
     } else {
-      // Check company details immediately after login if no password change needed
-      checkCompanyDetails().then(() => {
-        window.location.href = '/dashboard';
-      });
+      // Navigate to dashboard (company details modal will show if needed)
+      window.location.href = '/dashboard';
     }
   };
 
@@ -71,18 +71,9 @@ const LoginPage: React.FC = () => {
     setPasswordChangeOpen(false);
     setRequirePasswordChange(false);
     
-    // Check company details after password change
-    checkCompanyDetails().then(() => {
-      window.location.href = '/dashboard';
-    });
+    // Navigate to dashboard (company details modal will show if needed)
+    window.location.href = '/dashboard';
   };
-
-  useEffect(() => {
-    // Optional: Check on mount if already logged in
-    if (localStorage.getItem('token')) {
-      checkCompanyDetails();
-    }
-  }, []);
 
   return (
     <Container maxWidth="md">
@@ -137,9 +128,6 @@ const LoginPage: React.FC = () => {
         onSuccess={handlePasswordChangeSuccess}
         isRequired={requirePasswordChange}
       />
-
-      {/* Company Setup Modal */}
-      <CompanySetupModal />
     </Container>
   );
 };

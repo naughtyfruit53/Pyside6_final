@@ -47,24 +47,29 @@ export default function Dashboard() {
   );
 
   const { data: company, isError, error } = useQuery('company', () =>
-    masterDataService.getCompany(), // Assuming masterDataService has getCompany which calls /companies/current
+    masterDataService.getCompany(),
     { retry: false }
   );
 
   useEffect(() => {
-    if (isError && (error as any).response?.status === 404) {
+    // Check if company details are marked as incomplete in localStorage
+    const companyDetailsCompleted = localStorage.getItem('companyDetailsCompleted');
+    if (companyDetailsCompleted === 'false') {
       setShowCompanyModal(true);
     }
-  }, [isError, error]);
+  }, []);
 
   const handleModalClose = () => {
+    // Allow dismissing the modal, but it will reappear on next login
     setShowCompanyModal(false);
   };
 
   const handleModalSuccess = () => {
+    // Mark as completed in localStorage and hide modal
+    localStorage.setItem('companyDetailsCompleted', 'true');
     setShowCompanyModal(false);
     // Refetch company data
-    // useQuery will automatically refetch if needed, or invalidate if using queryClient
+    window.location.reload(); // Simple refresh to update all data
   };
 
   const stats = [
