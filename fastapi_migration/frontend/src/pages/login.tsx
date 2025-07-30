@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Tab, 
   Tabs, 
   Typography, 
   Container,
-  Alert,
   Button
 } from '@mui/material';
 import LoginForm from '../components/LoginForm';
 import OTPLogin from '../components/OTPLogin';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import PasswordChangeModal from '../components/PasswordChangeModal';
-import CompanyDetailsModal from '../components/CompanyDetailsModal';
+import CompanySetupModal from '../components/CompanySetupModal';
+import { useCompany } from '../context/CompanyContext';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -41,12 +41,11 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const LoginPage: React.FC = () => {
+  const { checkCompanyDetails } = useCompany();
   const [tabValue, setTabValue] = useState(0);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false);
-  const [companyDetailsOpen, setCompanyDetailsOpen] = useState(false);
   const [requirePasswordChange, setRequirePasswordChange] = useState(false);
-  const [requireCompanyDetails, setRequireCompanyDetails] = useState(false);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -60,20 +59,11 @@ const LoginPage: React.FC = () => {
     if (loginResponse?.must_change_password) {
       setRequirePasswordChange(true);
       setPasswordChangeOpen(true);
-    }
-    
-    // Check if this is first login and company details are needed
-    if (loginResponse?.is_first_login) {
-      setRequireCompanyDetails(true);
-      // If no password change required, show company details immediately
-      if (!loginResponse?.must_change_password) {
-        setCompanyDetailsOpen(true);
-      }
-    }
-    
-    // If no requirements, redirect directly to dashboard
-    if (!loginResponse?.must_change_password && !loginResponse?.is_first_login) {
-      window.location.href = '/dashboard';
+    } else {
+      // Check company details immediately after login if no password change needed
+      checkCompanyDetails().then(() => {
+        window.location.href = '/dashboard';
+      });
     }
   };
 
@@ -81,21 +71,18 @@ const LoginPage: React.FC = () => {
     setPasswordChangeOpen(false);
     setRequirePasswordChange(false);
     
-    // Check if company details are also required
-    if (requireCompanyDetails) {
-      setCompanyDetailsOpen(true);
-    } else {
-      // Redirect to dashboard
+    // Check company details after password change
+    checkCompanyDetails().then(() => {
       window.location.href = '/dashboard';
-    }
+    });
   };
 
-  const handleCompanyDetailsSuccess = () => {
-    setCompanyDetailsOpen(false);
-    setRequireCompanyDetails(false);
-    // Redirect to dashboard after successful company details entry
-    window.location.href = '/dashboard';
-  };
+  useEffect(() => {
+    // Optional: Check on mount if already logged in
+    if (localStorage.getItem('token')) {
+      checkCompanyDetails();
+    }
+  }, []);
 
   return (
     <Container maxWidth="md">
@@ -106,11 +93,6 @@ const LoginPage: React.FC = () => {
         <Typography variant="h6" component="h2" gutterBottom align="center" color="textSecondary">
           Enterprise Resource Planning System
         </Typography>
-
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <strong>Demo Account:</strong> naughtyfruit53@gmail.com | Password: 123456<br/>
-          <strong>OTP Login:</strong> Use the OTP tab for enhanced security authentication
-        </Alert>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="authentication tabs" centered>
@@ -156,13 +138,8 @@ const LoginPage: React.FC = () => {
         isRequired={requirePasswordChange}
       />
 
-      {/* Company Details Modal (for first login) */}
-      <CompanyDetailsModal
-        open={companyDetailsOpen}
-        onClose={() => setCompanyDetailsOpen(false)}
-        onSuccess={handleCompanyDetailsSuccess}
-        isRequired={requireCompanyDetails}
-      />
+      {/* Company Setup Modal */}
+      <CompanySetupModal />
     </Container>
   );
 };

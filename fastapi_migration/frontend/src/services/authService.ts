@@ -1,6 +1,5 @@
-// Revised services/authService.ts
+// frontend/src/services/authService.ts (Revised for detailed error handling in companyService)
 
-// services/authService.ts
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -35,13 +34,11 @@ api.interceptors.response.use(
       window.location.href = '/';
     }
     
-    // Provide user-friendly error messages
     const errorMessage = error.response?.data?.detail || 
                         error.response?.data?.message || 
                         error.message || 
                         'An unexpected error occurred';
                         
-    // You can dispatch to a global error handler here
     console.error('API Error:', errorMessage);
     
     return Promise.reject({ 
@@ -181,7 +178,6 @@ export const voucherService = {
 };
 
 export const masterDataService = {
-  // Vendors
   getVendors: async (params?: any) => {
     try {
       const response = await api.get('/vendors/', { params });
@@ -211,14 +207,13 @@ export const masterDataService = {
 
   deleteVendor: async (id: number) => {
     try {
-      const response = await api.delete(`/vendors/${id}`);
+      const response = await api.delete('/vendors/' + id);
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to delete vendor');
     }
   },
 
-  // Customers
   getCustomers: async (params?: any) => {
     try {
       const response = await api.get('/customers/', { params });
@@ -248,14 +243,13 @@ export const masterDataService = {
 
   deleteCustomer: async (id: number) => {
     try {
-      const response = await api.delete(`/customers/${id}`);
+      const response = await api.delete('/customers/' + id);
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to delete customer');
     }
   },
 
-  // Products
   getProducts: async (params?: any) => {
     try {
       const response = await api.get('/products/', { params });
@@ -285,14 +279,13 @@ export const masterDataService = {
 
   deleteProduct: async (id: number) => {
     try {
-      const response = await api.delete(`/products/${id}`);
+      const response = await api.delete('/products/' + id);
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to delete product');
     }
   },
 
-  // Stock
   getStock: async (params?: any) => {
     try {
       const response = await api.get('/stock/', { params });
@@ -338,6 +331,9 @@ export const companyService = {
       const response = await api.get('/companies/current');
       return response.data;
     } catch (error: any) {
+      if (error.status === 404) {
+        return null;
+      }
       throw new Error(error.userMessage || 'Failed to get current company');
     }
   },

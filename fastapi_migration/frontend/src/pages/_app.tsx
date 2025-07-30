@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Layout from '../components/Layout'; // Adjust path if needed
 import { useRouter } from 'next/router';
 import { authService } from '../services/authService'; // Adjust path if needed
+import { CompanyProvider } from '../context/CompanyContext'; // Added: Import CompanyProvider
 
 // Create theme
 const theme = createTheme({
@@ -66,9 +67,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Layout user={user} onLogout={handleLogout} showMegaMenu={showMegaMenu}>
-          <Component {...pageProps} />
-        </Layout>
+        <CompanyProvider>  {/* Added: Wrap with CompanyProvider */}
+          <Layout user={user} onLogout={handleLogout} showMegaMenu={showMegaMenu}>
+            <Component {...pageProps} />
+          </Layout>
+        </CompanyProvider>
         <ToastContainer
           position="top-right"
           autoClose={5000}

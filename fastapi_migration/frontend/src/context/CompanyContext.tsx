@@ -1,7 +1,7 @@
 // frontend/src/context/CompanyContext.tsx
 
-import React, { createContext, useState, useContext } from 'react';
-import { getCurrentCompany } from '../services/api'; // Import API service
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { companyService } from '../services/authService';
 
 interface CompanyContextType {
   isCompanySetupNeeded: boolean;
@@ -16,17 +16,22 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const checkCompanyDetails = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await getCurrentCompany(token);
+      await companyService.getCurrentCompany();
       setIsCompanySetupNeeded(false);
-    } catch (error) {
-      if (error.response?.status === 404) {
+    } catch (error: any) {
+      if (error.status === 404) {
         setIsCompanySetupNeeded(true);
       } else {
         console.error('Error checking company details:', error);
       }
     }
   };
+
+  useEffect(() => {
+    if (localStorage.getItem('token')) {
+      checkCompanyDetails();
+    }
+  }, []);
 
   return (
     <CompanyContext.Provider value={{ isCompanySetupNeeded, setIsCompanySetupNeeded, checkCompanyDetails }}>

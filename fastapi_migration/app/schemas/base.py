@@ -1,5 +1,3 @@
-# Revised schemas/base.py
-
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -246,7 +244,17 @@ class CompanyBase(BaseModel):
     email: Optional[EmailStr] = None
 
 class CompanyCreate(CompanyBase):
-    pass
+    @validator('pin_code')
+    def validate_pin_code(cls, v):
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError('Pin code must be 6 digits')
+        return v
+
+    @validator('state_code')
+    def validate_state_code(cls, v):
+        if not v.isdigit() or len(v) != 2:
+            raise ValueError('State code must be 2 digits')
+        return v
 
 class CompanyUpdate(BaseModel):
     name: Optional[str] = None

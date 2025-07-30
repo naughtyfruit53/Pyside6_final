@@ -1,9 +1,9 @@
 // frontend/src/components/CompanySetupModal.tsx
 
-import React from 'react';
-import { Modal, Box, Typography, Button } from '@mui/material'; // Adjust if using different UI library
+import React, { useState } from 'react';
+import { Modal, Box, Typography, Button, TextField, Alert, CircularProgress, Grid } from '@mui/material';
 import { useForm } from 'react-hook-form';
-import { createCompany } from '../services/api'; // Import API service
+import { companyService } from '../services/authService';
 import { useCompany } from '../context/CompanyContext';
 
 interface CompanyFormData {
@@ -22,47 +22,98 @@ interface CompanyFormData {
 }
 
 const CompanySetupModal: React.FC = () => {
-  const { setIsCompanySetupNeeded, checkCompanyDetails } = useCompany();
+  const { isCompanySetupNeeded, setIsCompanySetupNeeded, checkCompanyDetails } = useCompany();
   const { register, handleSubmit, formState: { errors } } = useForm<CompanyFormData>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const onSubmit = async (data: CompanyFormData) => {
+    setLoading(true);
+    setError(null);
+
+    // Map frontend field names to expected backend schema fields
+    const mappedData = {
+      name: data.name,
+      address_line1: data.address1,
+      address_line2: data.address2,
+      city: data.city,
+      state: data.state,
+      pin_code: data.pin_code,
+      state_code: data.state_code,
+      gstin: data.gst_number,
+      pan: data.pan_number,
+      contact_phone: data.contact_number,
+      email: data.email,
+      logo_path: data.logo_path,
+    };
+
     try {
-      const token = localStorage.getItem('token'); // Assume token stored after login
-      await createCompany(data, token);
+      await companyService.createCompany(mappedData);
+      setSuccess(true);
       setIsCompanySetupNeeded(false);
-      checkCompanyDetails(); // Re-check to confirm
-    } catch (error) {
-      console.error('Error saving company details:', error);
-      // Handle error (e.g., show toast)
+      checkCompanyDetails();
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+    } catch (error: any) {
+      setError(error.userMessage || 'Error saving company details');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Modal open={true} onClose={() => {}} disableEscapeKeyDown> {/* Persist until saved */}
-      <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', p: 4 }}>
+    <Modal open={isCompanySetupNeeded} onClose={() => {}} disableEscapeKeyDown={!success}>
+      <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, bgcolor: 'background.paper', p: 4 }}>
         <Typography variant="h6">Setup Company Details</Typography>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <input placeholder="Name" {...register('name', { required: true })} />
-          {errors.name && <span>Required</span>}
-          <input placeholder="Address 1" {...register('address1', { required: true })} />
-          {errors.address1 && <span>Required</span>}
-          <input placeholder="Address 2" {...register('address2')} />
-          <input placeholder="City" {...register('city', { required: true })} />
-          {errors.city && <span>Required</span>}
-          <input placeholder="State" {...register('state', { required: true })} />
-          {errors.state && <span>Required</span>}
-          <input placeholder="Pin Code" {...register('pin_code', { required: true })} />
-          {errors.pin_code && <span>Required</span>}
-          <input placeholder="State Code" {...register('state_code', { required: true })} />
-          {errors.state_code && <span>Required</span>}
-          <input placeholder="GST Number" {...register('gst_number')} />
-          <input placeholder="PAN Number" {...register('pan_number')} />
-          <input placeholder="Contact Number" {...register('contact_number', { required: true })} />
-          {errors.contact_number && <span>Required</span>}
-          <input placeholder="Email" {...register('email')} />
-          <input placeholder="Logo Path" {...register('logo_path')} />
-          <Button type="submit">Save</Button>
-        </form>
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mt: 2 }}>Company details saved successfully! Redirecting...</Alert>}
+        {!success && (
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Grid container spacing={2} sx={{ mt: 2 }}>
+              <Grid item xs={12}>
+                <TextField label="Name" {...register('name', { required: 'Name is required' })} fullWidth error={!!errors.name} helperText={errors.name?.message} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField label="Address 1" {...register('address1', { required: 'Address 1 is required' })} fullWidth error={!!errors.address1} helperText={errors.address1?.message} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField label="Address 2" {...register('address2')} fullWidth />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="City" {...register('city', { required: 'City is required' })} fullWidth error={!!errors.city} helperText={errors.city?.message} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="State" {...register('state', { required: 'State is required' })} fullWidth error={!!errors.state} helperText={errors.state?.message} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Pin Code" {...register('pin_code', { required: 'Pin Code is required' })} fullWidth error={!!errors.pin_code} helperText={errors.pin_code?.message} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="State Code" {...register('state_code', { required: 'State Code is required' })} fullWidth error={!!errors.state_code} helperText={errors.state_code?.message} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="GST Number" {...register('gst_number')} fullWidth />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="PAN Number" {...register('pan_number')} fullWidth />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Contact Number" {...register('contact_number', { required: 'Contact Number is required' })} fullWidth error={!!errors.contact_number} helperText={errors.contact_number?.message} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Email" {...register('email')} fullWidth />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField label="Logo Path" {...register('logo_path')} fullWidth />
+              </Grid>
+            </Grid>
+            <Button type="submit" variant="contained" disabled={loading} sx={{ mt: 2 }}>
+              {loading ? <CircularProgress size={24} /> : 'Save'}
+            </Button>
+          </form>
+        )}
       </Box>
     </Modal>
   );

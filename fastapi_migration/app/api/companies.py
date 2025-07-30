@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_admin_user, require_current_organization_id  # Updated import for require_current_organization_id
+from app.api.auth import get_current_active_user, get_current_admin_user, require_current_organization_id
 from app.core.tenant import TenantQueryMixin
 from app.models.base import User, Company
-from app.schemas.base import CompanyCreate, CompanyUpdate, CompanyInDB, UserRole
+from app.schemas.base import CompanyCreate, CompanyUpdate, CompanyInDB
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,10 +19,8 @@ async def get_companies(
     """Get companies in current organization"""
     
     if current_user.is_super_admin:
-        # Super admin can see all companies across organizations
         companies = db.query(Company).all()
     else:
-        # Regular users see only companies in their organization
         org_id = require_current_organization_id()
         query = db.query(Company)
         companies = TenantQueryMixin.filter_by_tenant(query, Company, org_id).all()
@@ -37,7 +35,6 @@ async def get_current_company(
     """Get current organization's company details"""
     
     if current_user.is_super_admin:
-        # Super admin needs to specify organization
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Super admin must specify organization ID"
@@ -68,7 +65,6 @@ async def get_company(
             detail="Company not found"
         )
     
-    # Ensure tenant access for non-super-admin users
     if not current_user.is_super_admin:
         TenantQueryMixin.ensure_tenant_access(company, current_user.organization_id)
     
@@ -92,7 +88,6 @@ async def create_company(
             detail="Company details already exist for this organization. Use update endpoint instead."
         )
     
-    # Create new company
     db_company = Company(
         organization_id=org_id,
         **company.dict()
@@ -120,11 +115,9 @@ async def update_company(
             detail="Company not found"
         )
     
-    # Ensure tenant access for non-super-admin users
     if not current_user.is_super_admin:
         TenantQueryMixin.ensure_tenant_access(company, current_user.organization_id)
     
-    # Update company
     for field, value in company_update.dict(exclude_unset=True).items():
         setattr(company, field, value)
     
@@ -149,7 +142,6 @@ async def delete_company(
             detail="Company not found"
         )
     
-    # Ensure tenant access for non-super-admin users
     if not current_user.is_super_admin:
         TenantQueryMixin.ensure_tenant_access(company, current_user.organization_id)
     
