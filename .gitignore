@@ -32,6 +32,12 @@ env/
 .py.bak
 ui_.py  # Auto-generated UI files from pyside6-uic
 
+#Database files
+*.db
+*.sqlite
+*.sqlite3
+!test_*.db  # Keep test databases if needed
+
 #Miscellaneous
 *.log
 *.bak

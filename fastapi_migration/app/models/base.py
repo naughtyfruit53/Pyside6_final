@@ -69,6 +69,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Multi-tenant fields
+    # organization_id is nullable ONLY for platform super admins (enforced in app logic)
+    # All other users must belong to an organization
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)  # Nullable for super admin
     
     # User credentials

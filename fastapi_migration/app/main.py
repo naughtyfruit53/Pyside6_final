@@ -3,8 +3,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from app.core.config import settings
-from app.core.database import create_tables
+from app.core.database import create_tables, SessionLocal
 from app.core.tenant import TenantMiddleware
+from app.core.seed_super_admin import seed_super_admin
 from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations, reports
 import logging
 
@@ -51,8 +52,21 @@ async def startup_event():
     try:
         create_tables()
         logger.info("Database tables created successfully")
+        
+        # Check if database schema is updated and seed super admin if possible
+        from app.core.seed_super_admin import check_database_schema_updated
+        db = SessionLocal()
+        try:
+            if check_database_schema_updated(db):
+                seed_super_admin(db)
+                logger.info("Super admin seeding completed")
+            else:
+                logger.warning("Database schema is not updated. Run 'alembic upgrade head' to enable super admin seeding.")
+        finally:
+            db.close()
+        
     except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
+        logger.error(f"Failed to initialize application: {e}")
         raise
 
 @app.on_event("shutdown")
