@@ -351,18 +351,22 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            {Object.entries(menuItems).map(([key, menu]) => (
-              <Button
-                key={key}
-                color="inherit"
-                startIcon={menu.icon}
-                endIcon={<ExpandMore />}
-                onClick={(e) => handleMenuClick(e, key)}
-                sx={{ mx: 1 }}
-              >
-                {menu.title}
-              </Button>
-            ))}
+            {/* Ordered menu items: Master Data, Inventory, Vouchers, Reports, Settings */}
+            {['masters', 'inventory', 'vouchers', 'reports'].map((key) => {
+              const menu = menuItems[key as keyof typeof menuItems];
+              return (
+                <Button
+                  key={key}
+                  color="inherit"
+                  startIcon={menu.icon}
+                  endIcon={<ExpandMore />}
+                  onClick={(e) => handleMenuClick(e, key)}
+                  sx={{ mx: 1 }}
+                >
+                  {menu.title}
+                </Button>
+              );
+            })}
 
             <Button
               color="inherit"
@@ -378,11 +382,11 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
               <>
                 <Button
                   color="inherit"
-                  startIcon={<AddBusiness />}
-                  onClick={handleCreateOrgLicense}
+                  startIcon={<Security />}
+                  onClick={() => router.push('/admin/license-management')}
                   sx={{ mx: 1 }}
                 >
-                  Create Organization License
+                  License Management
                 </Button>
                 <Button
                   color="inherit"

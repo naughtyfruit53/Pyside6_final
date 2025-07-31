@@ -21,7 +21,7 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("/", response_model=List[StockInDB])
+@router.get("/", response_model=List[StockWithProduct])
 async def get_stock(
     skip: int = 0,
     limit: int = 100,
@@ -30,8 +30,8 @@ async def get_stock(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get stock information"""
-    query = db.query(Stock).join(Product)
+    """Get stock information with product details"""
+    query = db.query(Stock, Product).join(Product)
     
     # Apply tenant filtering for non-super-admin users
     if not current_user.is_super_admin:
@@ -45,16 +45,36 @@ async def get_stock(
         # Filter for products where stock quantity <= reorder level
         query = query.filter(Stock.quantity <= Product.reorder_level)
     
-    stock_items = query.offset(skip).limit(limit).all()
-    return stock_items
+    stock_product_pairs = query.offset(skip).limit(limit).all()
+    
+    # Transform the results to include product information
+    result = []
+    for stock, product in stock_product_pairs:
+        stock_with_product = StockWithProduct(
+            id=stock.id,
+            organization_id=stock.organization_id,
+            product_id=stock.product_id,
+            quantity=stock.quantity,
+            unit=stock.unit,
+            location=stock.location,
+            last_updated=stock.last_updated,
+            product_name=product.name,
+            product_hsn_code=product.hsn_code,
+            product_part_number=product.part_number,
+            unit_price=product.unit_price,
+            reorder_level=product.reorder_level
+        )
+        result.append(stock_with_product)
+    
+    return result
 
-@router.get("/low-stock", response_model=List[StockInDB])
+@router.get("/low-stock", response_model=List[StockWithProduct])
 async def get_low_stock(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get products with low stock (below reorder level)"""
-    query = db.query(Stock).join(Product).filter(
+    """Get products with low stock (below reorder level) with product details"""
+    query = db.query(Stock, Product).join(Product).filter(
         Stock.quantity <= Product.reorder_level
     )
     
@@ -63,8 +83,28 @@ async def get_low_stock(
         org_id = require_current_organization_id()
         query = TenantQueryMixin.filter_by_tenant(query, Stock, org_id)
     
-    low_stock_items = query.all()
-    return low_stock_items
+    stock_product_pairs = query.all()
+    
+    # Transform the results to include product information
+    result = []
+    for stock, product in stock_product_pairs:
+        stock_with_product = StockWithProduct(
+            id=stock.id,
+            organization_id=stock.organization_id,
+            product_id=stock.product_id,
+            quantity=stock.quantity,
+            unit=stock.unit,
+            location=stock.location,
+            last_updated=stock.last_updated,
+            product_name=product.name,
+            product_hsn_code=product.hsn_code,
+            product_part_number=product.part_number,
+            unit_price=product.unit_price,
+            reorder_level=product.reorder_level
+        )
+        result.append(stock_with_product)
+    
+    return result
 
 @router.get("/product/{product_id}", response_model=StockInDB)
 async def get_product_stock(

@@ -508,6 +508,43 @@ def reset_organization_tables(db: Session, org_id: int):
     
     db.commit()
 
+
+@router.post("/reset-data")
+async def reset_organization_data(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Reset organization data (Organization Admin) or all data (Super Admin)"""
+    from app.services.reset_service import ResetService
+    
+    try:
+        if current_user.is_super_admin:
+            # Super admin can reset all data
+            result = ResetService.reset_all_data(db)
+            return {
+                "message": "All system data has been reset successfully",
+                "details": result["deleted"]
+            }
+        elif current_user.role in ["org_admin", "admin"] and current_user.organization_id:
+            # Organization admin can reset their organization data
+            result = ResetService.reset_organization_data(db, current_user.organization_id)
+            return {
+                "message": "Organization data has been reset successfully", 
+                "details": result["deleted"]
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to reset data"
+            )
+    except Exception as e:
+        logger.error(f"Error resetting data: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset data. Please try again."
+        )
+
+
 def reset_all_data(db: Session):
     """Reset all data except super admin user and organization structures"""
     from app.models.base import Company, Vendor, Customer, Product, Stock, AuditLog, EmailNotification, PaymentTerm
@@ -525,5 +562,6 @@ def reset_all_data(db: Session):
     # Delete non-super-admin users and organizations
     db.query(User).filter(User.is_super_admin == False).delete()
     db.query(Organization).delete()
+    db.commit()
     
     db.commit()
