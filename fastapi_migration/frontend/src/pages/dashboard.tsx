@@ -26,7 +26,7 @@ import {
   Warning
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
-import { voucherService, masterDataService } from '../services/authService';
+import { voucherService, masterDataService, companyService } from '../services/authService'; // Added companyService import
 import { useQuery } from 'react-query';
 import CompanyDetailsModal from '../components/CompanyDetailsModal';
 
@@ -47,7 +47,7 @@ export default function Dashboard() {
   );
 
   const { data: company, isError, error } = useQuery('company', () =>
-    masterDataService.getCompany(),
+    companyService.getCurrentCompany(), // Fixed: Use companyService.getCurrentCompany()
     { retry: false }
   );
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
                     <Box sx={{ color: stat.color, mr: 2 }}>
                       {stat.icon}
                     </Box>
-                    <Box>
+                   <Box>
                       <Typography color="textSecondary" gutterBottom>
                         {stat.title}
                       </Typography>

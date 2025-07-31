@@ -64,8 +64,15 @@ const StockManagement: React.FC = () => {
     }
   });
 
-  const bulkImportMutation = useMutation((data: any[]) => api.post('/stock/bulk', data), {
-    onSuccess: () => queryClient.invalidateQueries('stock')
+  const bulkImportMutation = useMutation((file: File) => masterDataService.bulkImportStock(file), {
+    onSuccess: () => {
+      queryClient.invalidateQueries('stock');
+      alert('Stock import completed successfully.');
+    },
+    onError: (error: any) => {
+      console.error('Bulk import error:', error);
+      alert(`Import failed: ${error.userMessage || 'Please check the file format and required columns.'}`);
+    }
   });
 
   const handleEditStock = (stock: any) => {
@@ -94,19 +101,11 @@ const StockManagement: React.FC = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.xlsx, .xls';
-    input.onchange = async (e: any) => {
+    input.onchange = (e: any) => {
       const file = e.target.files[0];
-      const workbook = new ExcelJS.Workbook();
-      const arrayBuffer = await file.arrayBuffer();
-      await workbook.xlsx.load(arrayBuffer);
-      const worksheet = workbook.getWorksheet(1);
-      const data: any[] = [];
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) { // Skip header
-          data.push(row.values);
-        }
-      });
-      bulkImportMutation.mutate(data);
+      if (file) {
+        bulkImportMutation.mutate(file);
+      }
     };
     input.click();
   };

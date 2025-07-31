@@ -1,39 +1,41 @@
 import React, { useState } from 'react';
-import { Button, TextField, Box, Typography } from '@mui/material';
-import axios from 'axios';
+import { Button, Box, Typography, Input } from '@mui/material';
+import { masterDataService } from '../services/authService'; // Import the service
 
 const StockBulkImport = () => {
-  const [stockItems, setStockItems] = useState('');  // Textarea for JSON input
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
   const handleSubmit = async () => {
+    if (!selectedFile) {
+      setError('Please select an Excel file to upload.');
+      return;
+    }
+
     try {
-      const itemsArray = JSON.parse(stockItems);  // Parse user input as array
-      if (!Array.isArray(itemsArray)) {
-        throw new Error('Input must be a JSON array');
-      }
-      const payload = { items: itemsArray };  // Wrap in { items: [...] }
-      const res = await axios.post('/api/v1/stock/bulk', payload);
-      setResponse(res.data);
+      const res = await masterDataService.bulkImportStock(selectedFile);
+      setResponse(res);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid request - ensure body is { "items": [...] }');
+      setError(err.userMessage || 'Failed to import Excel file. Check the file format and try again.');
       setResponse(null);
     }
   };
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h6">Bulk Import Stock</Typography>
-      <TextField
-        multiline
-        rows={10}
-        fullWidth
-        label="Enter JSON Array of Stock Items"
-        value={stockItems}
-        onChange={(e) => setStockItems(e.target.value)}
-        placeholder='[{"product_name": "Item1", "unit": "PCS", "quantity": 10.0}, ...]'
+      <Typography variant="h6">Bulk Import Stock from Excel</Typography>
+      <Input
+        type="file"
+        onChange={handleFileChange}
+        inputProps={{ accept: '.xlsx, .xls' }}
         sx={{ mb: 2 }}
       />
       <Button variant="contained" onClick={handleSubmit}>Import</Button>

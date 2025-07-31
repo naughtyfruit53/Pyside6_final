@@ -175,6 +175,10 @@ export const voucherService = {
       throw new Error(error.userMessage || 'Failed to send email');
     }
   },
+
+  getSalesVouchers: async (params?: any) => {
+    return voucherService.getVouchers('sales', params);
+  },
 };
 
 export const masterDataService = {
@@ -321,6 +325,22 @@ export const masterDataService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to adjust stock');
+    }
+  },
+
+  bulkImportStock: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await api.post('/stock/bulk', formData, {
+        headers: {
+          'Content-Type': undefined,
+        },
+        transformRequest: (data) => data,
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to bulk import stock');
     }
   },
 };
