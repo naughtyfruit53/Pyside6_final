@@ -510,6 +510,15 @@ async def bulk_import_stock(
             detail=f"Internal error during import processing: {str(e)}"
         )
 
+@router.post("/import/excel", response_model=BulkImportResponse)
+async def import_stock_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Import stock entries from Excel file - alias for bulk import"""
+    return await bulk_import_stock(file, db, current_user)
+
 @router.get("/template/excel")
 async def download_stock_template():
     """Download Excel template for stock bulk import"""
