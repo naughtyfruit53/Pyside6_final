@@ -35,7 +35,7 @@ async def get_current_user(
     )
     
     try:
-        email, organization_id = verify_token(token)
+        email, organization_id, user_type = verify_token(token)
         if email is None:
             raise credentials_exception
             

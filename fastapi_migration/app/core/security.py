@@ -33,17 +33,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-def verify_token(token: str) -> tuple[Union[str, None], Union[int, None]]:
-    """Verify token and return email and organization_id"""
+def verify_token(token: str) -> tuple[Union[str, None], Union[int, None], Union[str, None]]:
+    """Verify token and return email, organization_id, and user_type"""
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         email = payload.get("sub")
         organization_id = payload.get("organization_id")
-        return email, organization_id
+        user_type = payload.get("user_type", "organization")  # Default to organization for backward compatibility
+        return email, organization_id, user_type
     except exceptions.JWTError:
-        return None, None
+        return None, None, None
 
 def check_password_strength(password: str) -> tuple[bool, str]:
     """Check password strength and return validation result"""
