@@ -6,14 +6,14 @@ from app.core.database import get_db
 from app.api.auth import get_current_active_user, get_current_admin_user
 from app.core.tenant import TenantQueryMixin, require_current_organization_id
 from app.models.base import User, Product, Stock
-from app.schemas.base import ProductCreate, ProductUpdate, ProductInDB, BulkImportResponse
+from app.schemas.base import ProductCreate, ProductUpdate, ProductInDB, ProductResponse, BulkImportResponse
 from app.services.excel_service import ProductExcelService, ExcelService
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("/", response_model=List[ProductInDB])
+@router.get("/", response_model=List[ProductResponse])
 async def get_products(
     skip: int = 0,
     limit: int = 100,
@@ -43,9 +43,9 @@ async def get_products(
         query = query.filter(search_filter)
     
     products = query.offset(skip).limit(limit).all()
-    return products
+    return [ProductResponse.from_product(product) for product in products]
 
-@router.get("/{product_id}", response_model=ProductInDB)
+@router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: int,
     db: Session = Depends(get_db),
@@ -63,9 +63,9 @@ async def get_product(
     if not current_user.is_super_admin:
         TenantQueryMixin.ensure_tenant_access(product, current_user.organization_id)
     
-    return product
+    return ProductResponse.from_product(product)
 
-@router.post("/", response_model=ProductInDB)
+@router.post("/", response_model=ProductResponse)
 async def create_product(
     product: ProductCreate,
     db: Session = Depends(get_db),
@@ -96,9 +96,9 @@ async def create_product(
     db.refresh(db_product)
     
     logger.info(f"Product {product.name} created in org {org_id} by {current_user.email}")
-    return db_product
+    return ProductResponse.from_product(db_product)
 
-@router.put("/{product_id}", response_model=ProductInDB)
+@router.put("/{product_id}", response_model=ProductResponse)
 async def update_product(
     product_id: int,
     product_update: ProductUpdate,
@@ -138,7 +138,7 @@ async def update_product(
     db.refresh(product)
     
     logger.info(f"Product {product.name} updated by {current_user.email}")
-    return product
+    return ProductResponse.from_product(product)
 
 @router.delete("/{product_id}")
 async def delete_product(
@@ -214,7 +214,7 @@ async def export_products_excel(
     products_data = []
     for product in products:
         products_data.append({
-            "name": product.name,
+            "product_name": product.name,  # Map name to product_name for consistency
             "hsn_code": product.hsn_code or "",
             "part_number": product.part_number or "",
             "unit": product.unit,
@@ -266,7 +266,7 @@ async def import_products_excel(
             try:
                 # Map Excel columns to model fields
                 product_data = {
-                    "name": str(record.get("name", "")).strip(),
+                    "name": str(record.get("product_name", "")).strip(),  # Map product_name to name for DB
                     "hsn_code": str(record.get("hsn_code", "")).strip(),
                     "part_number": str(record.get("part_number", "")).strip(),
                     "unit": str(record.get("unit", "")).strip(),
@@ -280,7 +280,7 @@ async def import_products_excel(
                 
                 # Validate required fields
                 if not product_data["name"]:
-                    errors.append(f"Row {i}: Name is required")
+                    errors.append(f"Row {i}: Product Name is required")
                     continue
                     
                 if not product_data["unit"]:

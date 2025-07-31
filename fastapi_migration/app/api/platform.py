@@ -205,3 +205,25 @@ async def get_current_platform_user_info(
 async def platform_logout():
     """Platform logout endpoint (client should discard token)"""
     return {"message": "Successfully logged out from platform"}
+
+@router.post("/reset-all-data")
+async def reset_all_platform_data(
+    db: Session = Depends(get_db),
+    current_platform_user = Depends(get_current_platform_super_admin)
+):
+    """Reset all system data (Platform Super Admin only)"""
+    from app.services.reset_service import ResetService
+    
+    try:
+        result = ResetService.reset_all_data(db)
+        logger.info(f"Platform super admin {current_platform_user.email} reset all system data")
+        return {
+            "message": "All system data has been reset successfully",
+            "details": result["deleted"]
+        }
+    except Exception as e:
+        logger.error(f"Error resetting all data: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset all data. Please try again."
+        )

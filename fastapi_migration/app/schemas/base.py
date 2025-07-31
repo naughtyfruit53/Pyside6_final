@@ -396,6 +396,50 @@ class ProductInDB(ProductBase):
     class Config:
         from_attributes = True
 
+# Product response schema with consistent product_name field
+class ProductResponse(BaseModel):
+    id: int
+    product_name: str  # Consistent field name for API responses
+    hsn_code: Optional[str] = None
+    part_number: Optional[str] = None
+    unit: str
+    unit_price: float
+    gst_rate: float = 0.0
+    is_gst_inclusive: bool = False
+    reorder_level: int = 0
+    description: Optional[str] = None
+    is_manufactured: bool = False
+    organization_id: int
+    drawings_path: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    @classmethod
+    def from_product(cls, product):
+        """Create ProductResponse from Product model"""
+        return cls(
+            id=product.id,
+            product_name=product.name,  # Map name to product_name
+            hsn_code=product.hsn_code,
+            part_number=product.part_number,
+            unit=product.unit,
+            unit_price=product.unit_price,
+            gst_rate=product.gst_rate,
+            is_gst_inclusive=product.is_gst_inclusive,
+            reorder_level=product.reorder_level,
+            description=product.description,
+            is_manufactured=product.is_manufactured,
+            organization_id=product.organization_id,
+            drawings_path=product.drawings_path,
+            is_active=product.is_active,
+            created_at=product.created_at,
+            updated_at=product.updated_at
+        )
+    
+    class Config:
+        from_attributes = True
+
 # Stock schemas
 class StockBase(BaseModel):
     product_id: int
