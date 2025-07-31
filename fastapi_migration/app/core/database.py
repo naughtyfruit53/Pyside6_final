@@ -5,9 +5,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Determine database URL with fallback to SQLite
+database_url = settings.DATABASE_URL
+if not database_url:
+    database_url = "sqlite:///./tritiq_erp.db"
+    logger.info("No DATABASE_URL configured, using SQLite: tritiq_erp.db")
+
 # Database engine
 engine = create_engine(
-    settings.DATABASE_URL,
+    database_url,
     pool_pre_ping=True,
     pool_recycle=300,
     echo=settings.DEBUG
