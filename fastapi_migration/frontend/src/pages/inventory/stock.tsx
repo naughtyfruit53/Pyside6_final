@@ -115,7 +115,7 @@ const StockManagement: React.FC = () => {
     const worksheet = workbook.addWorksheet('Stock');
     worksheet.addRow(['Product Name', 'Quantity', 'Unit Price', 'Total Value', 'Reorder Level', 'Last Updated']);
     stockData.forEach((stock: any) => {
-      worksheet.addRow([stock.name, stock.quantity, stock.unit_price, stock.total_value, stock.reorder_level, stock.last_updated]);
+      worksheet.addRow([stock.product_name, stock.quantity, stock.unit_price, stock.total_value, stock.reorder_level, stock.last_updated]);
     });
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -144,7 +144,7 @@ const StockManagement: React.FC = () => {
       head: [['S.No', 'Product Name', 'Quantity', 'Unit Price', 'Total Value', 'Reorder Level', 'Last Updated']],
       body: items.map((item, idx) => [
         idx + 1,
-        item.name,
+        item.product_name,
         item.quantity,
         item.unit_price,
         item.total_value,
@@ -206,7 +206,7 @@ const StockManagement: React.FC = () => {
             <TableBody>
               {stockData?.map((stock: any) => (
                 <TableRow key={stock.id} sx={{ backgroundColor: stock.quantity <= stock.reorder_level ? 'yellow.main' : 'inherit' }}>
-                  <TableCell>{stock.name}</TableCell>
+                  <TableCell>{stock.product_name}</TableCell>
                   <TableCell>{stock.quantity} {stock.unit}</TableCell>
                   <TableCell>{stock.unit_price}</TableCell>
                   <TableCell>{stock.total_value}</TableCell>
@@ -287,7 +287,7 @@ const StockManagement: React.FC = () => {
               }}
             >
               {products?.map((p: any) => (
-                <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                <MenuItem key={p.id} value={p.id}>{p.product_name}</MenuItem>
               ))}
             </Select>
           </FormControl>

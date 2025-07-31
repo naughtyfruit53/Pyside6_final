@@ -455,6 +455,34 @@ export const organizationService = {
       throw new Error(error.userMessage || 'Failed to update organization');
     }
   },
+
+  // Admin-only endpoints
+  getAllOrganizations: async (params?: any) => {
+    try {
+      const response = await api.get('/organizations/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get organizations');
+    }
+  },
+
+  getOrganization: async (id: number) => {
+    try {
+      const response = await api.get(`/organizations/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to get organization');
+    }
+  },
+
+  updateOrganizationById: async (id: number, data: any) => {
+    try {
+      const response = await api.put(`/organizations/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.userMessage || 'Failed to update organization');
+    }
+  },
 };
 
 export const passwordService = {

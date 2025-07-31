@@ -42,8 +42,9 @@ export default function Settings() {
     setSuccess(null);
 
     try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await axios.post(
-        '/api/v1/organizations/reset-data',
+        `${API_BASE_URL}/api/v1/organizations/reset-data`,
         {},
         {
           headers: {
