@@ -9,6 +9,10 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     STANDARD_USER = "standard_user"
 
+class PlatformUserRole(str, Enum):
+    SUPER_ADMIN = "super_admin"
+    PLATFORM_ADMIN = "platform_admin"
+
 class OrganizationStatus(str, Enum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
@@ -213,6 +217,47 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
     organization_id: Optional[int] = None
+
+# Platform User schemas - for SaaS platform-level users
+class PlatformUserBase(BaseModel):
+    email: EmailStr
+    full_name: Optional[str] = None
+    role: PlatformUserRole = PlatformUserRole.PLATFORM_ADMIN
+    is_active: bool = True
+
+class PlatformUserCreate(PlatformUserBase):
+    password: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
+class PlatformUserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    role: Optional[PlatformUserRole] = None
+    is_active: Optional[bool] = None
+
+class PlatformUserInDB(PlatformUserBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class PlatformUserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class PlatformToken(BaseModel):
+    access_token: str
+    token_type: str
+    user_role: str
+    user_type: str = "platform"  # Distinguish from organization users
 
 # OTP Authentication schemas
 class OTPRequest(BaseModel):

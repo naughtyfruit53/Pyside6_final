@@ -4,6 +4,31 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 
+# Platform User Model - For SaaS platform-level users
+class PlatformUser(Base):
+    __tablename__ = "platform_users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # User credentials
+    email = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    
+    # User details
+    full_name = Column(String)
+    role = Column(String, nullable=False, default="super_admin")  # super_admin, platform_admin
+    is_active = Column(Boolean, default=True)
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    last_login = Column(DateTime(timezone=True))
+    
+    __table_args__ = (
+        Index('idx_platform_user_email', 'email'),
+        Index('idx_platform_user_active', 'is_active'),
+    )
+
 # Organization/Tenant Model - Core of Multi-tenancy
 class Organization(Base):
     __tablename__ = "organizations"
@@ -69,9 +94,9 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Multi-tenant fields
-    # organization_id is nullable ONLY for platform super admins (enforced in app logic)
-    # All other users must belong to an organization
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)  # Nullable for super admin
+    # organization_id will be made non-nullable in upcoming migration - only for organization users
+    # Platform-level users are now in separate platform_users table
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)  # TODO: Make non-nullable after migration
     
     # User credentials
     email = Column(String, nullable=False, index=True)
