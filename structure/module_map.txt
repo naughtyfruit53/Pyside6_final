@@ -37,6 +37,7 @@ fastapi_migration/
 │   │   │   ├── __init__.py
 │   │   ├── schemas/
 │   │   │   ├── base.py
+│   │   │   ├── company.py
 │   │   │   ├── stock.py
 │   │   │   ├── vouchers.py
 │   │   │   ├── __init__.py
@@ -46,9 +47,11 @@ fastapi_migration/
 │   │   │   ├── otp_service.py
 │   │   │   ├── security_services.py
 │   │   │   ├── __init__.py
+│   │   ├── static/
 │   │   ├── templates/
 │   │   │   ├── excel/
 │   │   ├── utils/
+│   │   │   ├── excel_import.py
 │   │   │   ├── __init__.py
 │   ├── frontend/
 │   │   ├── src/
@@ -71,14 +74,19 @@ fastapi_migration/
 │   │   │   ├── utils/
 │   │   │   │   ├── apiUtils.py
 │   ├── migrations/
+│   │   ├── 003_seed_company.py
 │   │   ├── env.py
 │   │   ├── versions/
 │   │   │   ├── 001_initial.py
 │   │   │   ├── 002_voucher_tables.py
+│   │   │   ├── f337f52a11a5_seed_default_company.py
 │   ├── structure/
 │   ├── tests/
+│   │   ├── test_companies.py
+│   │   ├── test_database_reset.py
 │   │   ├── test_excel_features.py
 │   │   ├── test_multitenant.py
 │   │   ├── test_organization_license.py
 │   │   ├── test_password_management.py
+│   │   ├── test_stock.py
 │   │   ├── __init__.py

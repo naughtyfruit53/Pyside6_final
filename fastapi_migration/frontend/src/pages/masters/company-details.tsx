@@ -1,21 +1,30 @@
-// Generated masters/company-details.tsx (Revised to show blank until data entered)
-
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Grid, Button, Alert } from '@mui/material';
 import { Edit } from '@mui/icons-material';
-import { useQuery } from 'react-query';
-import { masterDataService } from '../../services/authService';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { companyService } from '../../services/authService';
 import CompanyDetailsModal from '../../components/CompanyDetailsModal';
 
 const CompanyDetails: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data: company, isLoading, isError } = useQuery('company', masterDataService.getCompany, {
+  const { data: company, isLoading, isError } = useQuery('company', companyService.getCurrentCompany, {
     onError: () => console.error('Failed to fetch company details'),
+  });
+
+  const mutation = useMutation(companyService.createCompany, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('company');
+    },
   });
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
+  const handleSuccess = () => {
+    queryClient.invalidateQueries('company');
+    handleCloseModal();
+  };
 
   if (isLoading) {
     return <Typography>Loading...</Typography>;
@@ -41,7 +50,7 @@ const CompanyDetails: React.FC = () => {
         <CompanyDetailsModal 
           open={openModal} 
           onClose={handleCloseModal} 
-          onSuccess={handleCloseModal}
+          onSuccess={handleSuccess}
           isRequired={false}
         />
       </Box>
@@ -72,6 +81,14 @@ const CompanyDetails: React.FC = () => {
             <Typography>{company.website}</Typography>
           </Grid>
           <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2">GST Number</Typography>
+            <Typography>{company.gst_number}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2">PAN Number</Typography>
+            <Typography>{company.pan_number}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2">Primary Email</Typography>
             <Typography>{company.primary_email}</Typography>
           </Grid>
@@ -82,16 +99,8 @@ const CompanyDetails: React.FC = () => {
           <Grid item xs={12}>
             <Typography variant="subtitle2">Address</Typography>
             <Typography>
-              {company.address1}, {company.address2}, {company.city}, {company.state} {company.pin_code}
+              {company.address1}{company.address2 ? `, ${company.address2}` : ''}, {company.city}, {company.state} {company.pin_code}
             </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2">GST Number</Typography>
-            <Typography>{company.gst_number}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2">PAN Number</Typography>
-            <Typography>{company.pan_number}</Typography>
           </Grid>
         </Grid>
         <Button
@@ -106,7 +115,7 @@ const CompanyDetails: React.FC = () => {
       <CompanyDetailsModal 
         open={openModal} 
         onClose={handleCloseModal} 
-        onSuccess={handleCloseModal}
+        onSuccess={handleSuccess}
         isRequired={false}
       />
     </Box>

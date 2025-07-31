@@ -146,18 +146,18 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({
     setError(null);
     setFieldErrors({});
 
-    // Map frontend field names to expected backend schema fields
+    // Correct mapping to backend schema fields
     const mappedData = {
       name: data.name,
-      address_line1: data.address1,
-      address_line2: data.address2,
+      address1: data.address1,
+      address2: data.address2,
       city: data.city,
       state: data.state,
       pin_code: data.pin_code,
       state_code: data.state_code,
-      gstin: data.gst_number,
-      pan: data.pan_number,
-      contact_phone: data.contact_number,
+      gst_number: data.gst_number,
+      pan_number: data.pan_number,
+      contact_number: data.contact_number,
       email: data.email,
     };
 

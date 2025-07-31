@@ -187,7 +187,7 @@ class UserUpdate(BaseModel):
 
 class UserInDB(UserBase):
     id: int
-    organization_id: int
+    organization_id: Optional[int] = None  # <-- MADE OPTIONAL TO ALLOW None FOR PLATFORM USERS
     is_super_admin: bool = False
     must_change_password: bool = False
     failed_login_attempts: int = 0
@@ -273,56 +273,6 @@ class OTPResponse(BaseModel):
     message: str
     email: str
     expires_in_minutes: int = 10
-
-# Company schemas
-class CompanyBase(BaseModel):
-    name: str
-    address1: str
-    address2: Optional[str] = None
-    city: str
-    state: str
-    pin_code: str
-    state_code: str
-    gst_number: Optional[str] = None
-    pan_number: Optional[str] = None
-    contact_number: str
-    email: Optional[EmailStr] = None
-
-class CompanyCreate(CompanyBase):
-    @validator('pin_code')
-    def validate_pin_code(cls, v):
-        if not v.isdigit() or len(v) != 6:
-            raise ValueError('Pin code must be 6 digits')
-        return v
-
-    @validator('state_code')
-    def validate_state_code(cls, v):
-        if not v.isdigit() or len(v) != 2:
-            raise ValueError('State code must be 2 digits')
-        return v
-
-class CompanyUpdate(BaseModel):
-    name: Optional[str] = None
-    address1: Optional[str] = None
-    address2: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    pin_code: Optional[str] = None
-    state_code: Optional[str] = None
-    gst_number: Optional[str] = None
-    pan_number: Optional[str] = None
-    contact_number: Optional[str] = None
-    email: Optional[EmailStr] = None
-
-class CompanyInDB(CompanyBase):
-    id: int
-    organization_id: int
-    logo_path: Optional[str] = None
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
 
 # Vendor schemas
 class VendorBase(BaseModel):
