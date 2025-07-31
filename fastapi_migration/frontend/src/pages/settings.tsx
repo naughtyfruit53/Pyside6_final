@@ -115,6 +115,18 @@ export default function Settings() {
             >
               User Profile
             </Button>
+
+            {/* User Management for Organization Admins */}
+            {(userRole === 'org_admin' || userRole === 'admin') && (
+              <Button
+                variant="outlined"
+                onClick={() => router.push('/settings/user-management')}
+                sx={{ mb: 2, ml: 2 }}
+                startIcon={<Security />}
+              >
+                User Management
+              </Button>
+            )}
           </Paper>
         </Grid>
 

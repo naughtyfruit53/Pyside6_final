@@ -5,6 +5,7 @@ import { Box, Button, TextField, Typography, Grid, IconButton, Alert, CircularPr
 import { Add, Remove, Edit, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { voucherService } from '../../../services/authService';
+import SearchableDropdown from '../../../components/SearchableDropdown';
 
 const numberToWordsInteger = (num: number): string => {
   if (num === 0) return '';
@@ -52,6 +53,8 @@ const PurchaseOrderPage: React.FC = () => {
   const { id, mode: queryMode } = router.query;
   const [mode, setMode] = useState<'create' | 'edit' | 'view'>((queryMode as any) || 'create');
   const [selectedId, setSelectedId] = useState<number | null>(id ? Number(id) : null);
+  const [addVendorDialogOpen, setAddVendorDialogOpen] = useState(false);
+  const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
@@ -256,19 +259,22 @@ const PurchaseOrderPage: React.FC = () => {
                   />
                 </Grid>
                 <Grid item xs={6}>
-                  <Select
-                    fullWidth
-                    {...control.register('vendor', { required: true })}
-                    error={!!errors.vendor}
+                  <SearchableDropdown
+                    options={vendorList || []}
+                    value={watch('vendor')}
+                    onChange={(value) => setValue('vendor', value)}
+                    onAddNew={() => setAddVendorDialogOpen(true)}
+                    getOptionLabel={(option) => option.name}
+                    getOptionValue={(option) => option.id}
+                    label="Vendor"
+                    placeholder="Search vendors..."
                     disabled={isViewMode}
-                    displayEmpty
-                  >
-                    <MenuItem value="" disabled>Select Vendor</MenuItem>
-                    {vendorList?.map((vendor: any) => (
-                      <MenuItem key={vendor.id} value={vendor.id}>{vendor.name}</MenuItem>
-                    ))}
-                  </Select>
-                  {errors.vendor && <Typography color="error" variant="caption">Required</Typography>}
+                    error={!!errors.vendor}
+                    helperText={errors.vendor ? 'Required' : ''}
+                    required={true}
+                    addNewText="Add New Vendor"
+                    searchFields={['name', 'email', 'contact_number']}
+                  />
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
@@ -283,19 +289,32 @@ const PurchaseOrderPage: React.FC = () => {
                   {fields.map((field, index) => (
                     <Grid container spacing={2} key={field.id} sx={{ mb: 2 }}>
                       <Grid item xs={3}>
-                        <Select
-                          fullWidth
-                          {...control.register(`items.${index}.name`, { required: true })}
-                          error={!!errors.items?.[index]?.name}
+                        <SearchableDropdown
+                          options={productList || []}
+                          value={watch(`items.${index}.name`)}
+                          onChange={(value) => {
+                            setValue(`items.${index}.name`, value);
+                            // Auto-fill product details when selected
+                            const selectedProduct = productList?.find((p: any) => p.id === value);
+                            if (selectedProduct) {
+                              setValue(`items.${index}.hsn_code`, selectedProduct.hsn_code || '');
+                              setValue(`items.${index}.unit`, selectedProduct.unit || '');
+                              setValue(`items.${index}.unit_price`, selectedProduct.unit_price || 0);
+                              setValue(`items.${index}.gst`, selectedProduct.gst_rate || 0);
+                            }
+                          }}
+                          onAddNew={() => setAddProductDialogOpen(true)}
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          label="Product"
+                          placeholder="Search products..."
                           disabled={isViewMode}
-                          displayEmpty
-                        >
-                          <MenuItem value="" disabled>Select Product</MenuItem>
-                          {productList?.map((product: any) => (
-                            <MenuItem key={product.id} value={product.name}>{product.name}</MenuItem>
-                          ))}
-                        </Select>
-                        {errors.items?.[index]?.name && <Typography color="error" variant="caption">Required</Typography>}
+                          error={!!errors.items?.[index]?.name}
+                          helperText={errors.items?.[index]?.name ? 'Required' : ''}
+                          required={true}
+                          addNewText="Add New Product"
+                          searchFields={['name', 'hsn_code', 'part_number']}
+                        />
                       </Grid>
                       <Grid item xs={2}>
                         <TextField
@@ -417,6 +436,116 @@ const PurchaseOrderPage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Add Vendor Dialog */}
+      <Box component="div">
+        {addVendorDialogOpen && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+              zIndex: 1300,
+              minWidth: 400
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Add New Vendor
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Redirecting to vendor creation page...
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Button onClick={() => setAddVendorDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  setAddVendorDialogOpen(false);
+                  router.push('/masters/vendors');
+                }}
+              >
+                Go to Vendors
+              </Button>
+            </Box>
+          </Box>
+        )}
+        {addVendorDialogOpen && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1200
+            }}
+            onClick={() => setAddVendorDialogOpen(false)}
+          />
+        )}
+      </Box>
+
+      {/* Add Product Dialog */}
+      <Box component="div">
+        {addProductDialogOpen && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+              zIndex: 1300,
+              minWidth: 400
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Add New Product
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Redirecting to product creation page...
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Button onClick={() => setAddProductDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  setAddProductDialogOpen(false);
+                  router.push('/masters/products');
+                }}
+              >
+                Go to Products
+              </Button>
+            </Box>
+          </Box>
+        )}
+        {addProductDialogOpen && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1200
+            }}
+            onClick={() => setAddProductDialogOpen(false)}
+          />
+        )}
+      </Box>
     </Container>
   );
 };

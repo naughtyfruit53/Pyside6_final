@@ -594,39 +594,37 @@ const MasterDataManagement: React.FC = () => {
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {masterDataTypes.map((dataType, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Box sx={{ color: dataType.color, mr: 1 }}>
-                            {dataType.icon}
-                          </Box>
-                          <Typography color="textSecondary" gutterBottom>
-                            {dataType.title}
-                          </Typography>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Box sx={{ color: dataType.color, mr: 1 }}>
+                          {dataType.icon}
                         </Box>
-                        <Typography variant="h4" component="h2">
-                          {dataType.count}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          {dataType.description}
+                        <Typography color="textSecondary" gutterBottom>
+                          {dataType.title}
                         </Typography>
                       </Box>
-                      <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        sx={{ bgcolor: dataType.color }}
-                        size="small"
-                        onClick={() => openItemDialog(null, dataType.tabIndex)}
-                      >
-                        Add
-                      </Button>
+                      <Typography variant="h4" component="h2">
+                        {dataType.count}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        {dataType.description}
+                      </Typography>
                     </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      sx={{ bgcolor: dataType.color }}
+                      size="small"
+                      onClick={() => openItemDialog(null, dataType.tabIndex)}
+                    >
+                      Add
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
             </Grid>
           ))}
         </Grid>
