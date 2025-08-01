@@ -34,7 +34,14 @@ export default function Settings() {
   // Get user info from localStorage or context
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const userRole = typeof window !== 'undefined' ? localStorage.getItem('userRole') : null;
-  const isSuperAdmin = userRole === 'super_admin' || false; // You may need to adjust this based on how user role is stored
+  const organizationName = typeof window !== 'undefined' ? localStorage.getItem('organizationName') : null;
+  
+  // Improved role detection
+  const isSuperAdmin = userRole === 'super_admin';
+  const isOrgAdmin = userRole === 'org_admin';
+  const isAdmin = userRole === 'admin';
+  const canManageUsers = isOrgAdmin || isSuperAdmin;
+  const canResetData = isOrgAdmin || isSuperAdmin;
 
   const handleResetData = async () => {
     setLoading(true);
@@ -71,13 +78,23 @@ export default function Settings() {
     }
   };
 
-  const canResetData = userRole === 'org_admin' || userRole === 'super_admin' || isSuperAdmin;
-
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
         Settings
       </Typography>
+      
+      {/* User Role Information */}
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
+        <Typography variant="body1">
+          <strong>Current Role:</strong> {userRole || 'User'} {organizationName && `• Organization: ${organizationName}`}
+        </Typography>
+        {canManageUsers && (
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            You have administrative privileges to manage users and organization settings.
+          </Typography>
+        )}
+      </Paper>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -118,15 +135,27 @@ export default function Settings() {
             </Button>
 
             {/* User Management for Organization Admins */}
-            {(userRole === 'org_admin' || userRole === 'admin') && (
-              <Button
-                variant="outlined"
-                onClick={() => router.push('/settings/user-management')}
-                sx={{ mb: 2, ml: 2 }}
-                startIcon={<Security />}
-              >
-                User Management
-              </Button>
+            {canManageUsers && (
+              <>
+                <Button
+                  variant="contained"
+                  onClick={() => router.push('/settings/user-management')}
+                  sx={{ mb: 2, mr: 2 }}
+                  startIcon={<Security />}
+                  color="primary"
+                >
+                  Manage Users
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  onClick={() => router.push('/settings/add-user')}
+                  sx={{ mb: 2 }}
+                  startIcon={<Add />}
+                >
+                  Add User
+                </Button>
+              </>
             )}
           </Paper>
         </Grid>
