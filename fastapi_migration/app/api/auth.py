@@ -1,17 +1,17 @@
 """
-Authentication and authorization endpoints
+Enhanced authentication and authorization endpoints with strict organization scoping
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
-from typing import Optional  # Added missing import
+from typing import Optional
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password, verify_token
 from app.core.config import settings
-from app.core.tenant import TenantContext, TenantQueryMixin, get_organization_from_request  # Import shared tenant utils
-from app.models.base import User, Organization
+from app.core.tenant import TenantContext, TenantQueryFilter, get_organization_from_request
+from app.models.base import User, Organization, PlatformUser
 from app.schemas.base import Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse, PasswordChangeRequest, ForgotPasswordRequest, PasswordResetRequest, PasswordChangeResponse
 from app.services.email_service import email_service
 from app.services.otp_service import otp_service
@@ -22,12 +22,12 @@ router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
-# Dependency to get current user from token
+# Enhanced dependency to get current user from token with strict organization scoping
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
-    """Get current user from JWT token"""
+    """Get current user from JWT token with enhanced organization validation"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -46,18 +46,45 @@ async def get_current_user(
     except Exception:
         raise credentials_exception
     
-    # Find user
-    if organization_id:
-        user = db.query(User).filter(
-            User.email == email,
-            User.organization_id == organization_id
-        ).first()
+    # Find user based on type
+    if user_type == "platform":
+        # Platform user
+        platform_user = db.query(PlatformUser).filter(PlatformUser.email == email).first()
+        if platform_user is None:
+            raise credentials_exception
+        
+        # Convert to User object for compatibility (platform users have no organization)
+        user = User(
+            id=platform_user.id,
+            email=platform_user.email,
+            username=platform_user.email,  # Use email as username for platform users
+            full_name=platform_user.full_name,
+            role=platform_user.role,
+            organization_id=None,  # Platform users don't belong to any organization
+            is_active=platform_user.is_active,
+            created_at=platform_user.created_at,
+            updated_at=platform_user.updated_at,
+            last_login=platform_user.last_login
+        )
+        
+        # Set platform user flag
+        user.is_platform_user = True
+        
     else:
-        # For super admin
-        user = db.query(User).filter(User.email == email).first()
-    
-    if user is None:
-        raise credentials_exception
+        # Organization user
+        if organization_id:
+            user = db.query(User).filter(
+                User.email == email,
+                User.organization_id == organization_id
+            ).first()
+        else:
+            # Should not happen for organization users
+            raise credentials_exception
+        
+        if user is None:
+            raise credentials_exception
+        
+        user.is_platform_user = False
     
     # Set user context
     TenantContext.set_user_id(user.id)
@@ -67,7 +94,7 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Get current active user"""
+    """Get current active user with organization validation"""
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
@@ -76,25 +103,32 @@ async def get_current_admin_user(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     """Get current user with admin privileges"""
-    if current_user.role not in [UserRole.ORG_ADMIN, UserRole.ADMIN] and not current_user.is_super_admin:
+    if (current_user.role not in [UserRole.ORG_ADMIN, UserRole.ADMIN] and 
+        not getattr(current_user, 'is_platform_user', False)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions. Admin access required."
         )
     return current_user
 
-async def get_current_super_admin(
+async def get_current_platform_user(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
-    """Get current user with super admin privileges"""
-    if not current_user.is_super_admin:
+    """Get current user with platform privileges"""
+    if not getattr(current_user, 'is_platform_user', False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super administrator access required"
+            detail="Platform administrator access required"
         )
     return current_user
 
-# Moved from tenant.py to break circular import
+# Backward compatibility alias
+async def get_current_super_admin(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Get current user with super admin privileges (backward compatibility)"""
+    return await get_current_platform_user(current_user)
+
 def get_current_organization_id(current_user: User = Depends(get_current_active_user)) -> Optional[int]:
     """Get current organization ID from context or user"""
     org_id = TenantContext.get_organization_id()
@@ -105,8 +139,8 @@ def get_current_organization_id(current_user: User = Depends(get_current_active_
         TenantContext.set_organization_id(current_user.organization_id)
         return current_user.organization_id
     
-    if current_user.is_super_admin:
-        # For super admins, organization ID can be None
+    if getattr(current_user, 'is_platform_user', False):
+        # For platform users, organization ID can be None
         return None
     
     raise HTTPException(
@@ -115,8 +149,59 @@ def get_current_organization_id(current_user: User = Depends(get_current_active_
     )
 
 def require_current_organization_id(current_user: User = Depends(get_current_active_user)) -> int:
-    """Get current organization ID, raise error if not set or for super admin without specification"""
+    """Get current organization ID, raise error if not set"""
     org_id = get_current_organization_id(current_user)
+    
+    if org_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Organization context is required for this operation"
+        )
+    
+    return org_id
+
+def validate_organization_access(
+    organization_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Organization:
+    """Validate that current user has access to the specified organization"""
+    
+    # Platform users have access to all organizations
+    if getattr(current_user, 'is_platform_user', False):
+        org = db.query(Organization).filter(Organization.id == organization_id).first()
+        if not org:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Organization {organization_id} not found"
+            )
+        return org
+    
+    # Organization users can only access their own organization
+    if current_user.organization_id != organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied to organization {organization_id}"
+        )
+    
+    org = db.query(Organization).filter(Organization.id == organization_id).first()
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Organization {organization_id} not found"
+        )
+    
+    return org
+
+# Enhanced dependency for tenant-scoped database queries
+def get_tenant_db_session(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Session:
+    """Get database session with tenant context set"""
+    if current_user.organization_id:
+        TenantContext.set_organization_id(current_user.organization_id)
+    return db
     
     if org_id is None:
         if current_user.is_super_admin:
