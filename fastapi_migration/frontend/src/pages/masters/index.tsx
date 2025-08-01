@@ -123,11 +123,12 @@ const STATE_CODES: { [key: string]: string } = {
 
 const MasterDataManagement: React.FC = () => {
   const router = useRouter();
-  const { tab } = router.query;
+  const { tab, action } = router.query;
   const [tabValue, setTabValue] = useState(0);
   const [user] = useState({ email: 'demo@example.com', role: 'admin' });
   const [itemDialog, setItemDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '', 
     address1: '', 
@@ -157,7 +158,7 @@ const MasterDataManagement: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Update tab from URL
+  // Update tab from URL and handle auto-open add dialog
   useEffect(() => {
     switch (tab) {
       case 'vendors': setTabValue(0); break;
@@ -167,7 +168,12 @@ const MasterDataManagement: React.FC = () => {
       case 'company': setTabValue(4); break;
       default: setTabValue(0);
     }
-  }, [tab]);
+    
+    // Auto-open add dialog if action=add in URL
+    if (action === 'add') {
+      openItemDialog(null);
+    }
+  }, [tab, action]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -212,6 +218,11 @@ const MasterDataManagement: React.FC = () => {
         setItemDialog(false);
         setSelectedItem(null);
         resetForm();
+        setErrorMessage('');
+      },
+      onError: (error: any) => {
+        console.error('Update error:', error);
+        setErrorMessage(error.message || 'Failed to update item. Please check your input.');
       }
     }
   );
@@ -231,6 +242,17 @@ const MasterDataManagement: React.FC = () => {
         setItemDialog(false);
         setSelectedItem(null);
         resetForm();
+        setErrorMessage('');
+        
+        // Trigger refresh in parent window if opened from voucher
+        if (window.opener) {
+          window.opener.localStorage.setItem('refreshMasterData', 'true');
+          window.close();
+        }
+      },
+      onError: (error: any) => {
+        console.error('Create error:', error);
+        setErrorMessage(error.message || 'Failed to create item. Please check your input.');
       }
     }
   );
@@ -290,6 +312,7 @@ const MasterDataManagement: React.FC = () => {
     } else {
       resetForm();
     }
+    setErrorMessage(''); // Clear any previous error messages
     setItemDialog(true);
   };
 
@@ -325,6 +348,13 @@ const MasterDataManagement: React.FC = () => {
 
   const handleSubmit = () => {
     const data = { ...formData };
+    
+    // Map frontend field names to backend schema
+    if (tabValue === 0 || tabValue === 1) { // Vendors or Customers
+      data.contact_number = data.contact; // Map contact to contact_number
+      delete data.contact; // Remove old field name
+    }
+    
     if (selectedItem) {
       updateItemMutation.mutate({ ...selectedItem, ...data });
     } else {
@@ -731,6 +761,11 @@ const MasterDataManagement: React.FC = () => {
       <Dialog open={itemDialog} onClose={() => setItemDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{selectedItem ? 'Edit' : 'Add'} {tabValue === 0 ? 'Vendor' : tabValue === 1 ? 'Customer' : tabValue === 2 ? 'Product' : 'Account'}</DialogTitle>
         <DialogContent>
+          {errorMessage && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {errorMessage}
+            </Alert>
+          )}
           <TextField
             fullWidth
             label="Name"
