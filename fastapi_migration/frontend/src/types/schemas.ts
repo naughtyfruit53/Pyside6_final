@@ -19,7 +19,7 @@ export interface StockInDB extends StockBase {
 
 export interface BulkStockRequest {
   items: Array<{
-    name: string;  // Changed from product_name to name
+    product_name: string;  // Use product_name for frontend consistency
     hsn_code?: string | null;
     part_number?: string | null;
     unit: string;

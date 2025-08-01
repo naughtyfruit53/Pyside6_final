@@ -173,7 +173,7 @@ const InventoryManagement: React.FC = () => {
           <TableBody>
             {filteredItems.map((item) => (
               <TableRow key={item.product_id || item.id}>
-                <TableCell>{item.product_name || item.name}</TableCell>
+                <TableCell>{item.product_name}</TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     {item.quantity}
@@ -372,7 +372,7 @@ const InventoryManagement: React.FC = () => {
 
       {/* Stock Adjustment Dialog */}
       <Dialog open={adjustmentDialog} onClose={() => setAdjustmentDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Adjust Stock: {selectedProduct?.product_name || selectedProduct?.name}</DialogTitle>
+        <DialogTitle>Adjust Stock: {selectedProduct?.product_name}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
             Current Stock: {selectedProduct?.quantity} {selectedProduct?.unit}

@@ -265,7 +265,7 @@ const MasterDataManagement: React.FC = () => {
     setSelectedItem(item);
     if (item) {
       setFormData({
-        name: item.name || item.product_name || '',  // Handle both name and product_name fields
+        name: item.product_name || '',  // Use product_name consistently
         address1: item.address1 || item.address || '',
         address2: item.address2 || '',
         city: item.city || '',
@@ -336,6 +336,30 @@ const MasterDataManagement: React.FC = () => {
     const state = e.target.value;
     const state_code = STATE_CODES[state] || '';
     setFormData(prev => ({ ...prev, state, state_code }));
+  };
+
+  const handlePincodeChange = async (e: any) => {
+    const pinCode = e.target.value;
+    setFormData(prev => ({ ...prev, pin_code: pinCode }));
+    
+    // Auto-fill city/state/state_code if pinCode is 6 digits
+    if (pinCode.length === 6 && /^\d{6}$/.test(pinCode)) {
+      try {
+        const response = await fetch(`/api/v1/pincode/lookup/${pinCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFormData(prev => ({ 
+            ...prev, 
+            city: data.city,
+            state: data.state,
+            state_code: data.state_code
+          }));
+        }
+      } catch (error) {
+        console.log('Pincode lookup failed:', error);
+        // Fail silently, user can enter manually
+      }
+    }
   };
 
   // Master data summary with real data
@@ -732,6 +756,14 @@ const MasterDataManagement: React.FC = () => {
               />
               <TextField
                 fullWidth
+                label="PIN Code"
+                value={formData.pin_code}
+                onChange={handlePincodeChange}
+                sx={{ mb: 2 }}
+                helperText="Enter 6-digit PIN code to auto-fill city and state"
+              />
+              <TextField
+                fullWidth
                 label="City"
                 value={formData.city}
                 onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
@@ -758,13 +790,7 @@ const MasterDataManagement: React.FC = () => {
                 value={formData.state_code}
                 onChange={(e) => setFormData(prev => ({ ...prev, state_code: e.target.value }))}
                 sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="PIN Code"
-                value={formData.pin_code}
-                onChange={(e) => setFormData(prev => ({ ...prev, pin_code: e.target.value }))}
-                sx={{ mb: 2 }}
+                helperText="Auto-filled from PIN code or state selection"
               />
               <TextField
                 fullWidth

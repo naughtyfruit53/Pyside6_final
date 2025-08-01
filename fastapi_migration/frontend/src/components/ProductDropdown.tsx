@@ -14,7 +14,7 @@ import {
 
 export interface Product {
   id: number;
-  name: string;  // Using name field as specified in requirements
+  product_name: string;  // Using product_name field for frontend consistency as per requirements
   hsn_code?: string;
   part_number?: string;
   unit: string;
@@ -114,11 +114,11 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
           }
         }}
         options={products}
-        getOptionLabel={(option) => option.name}
+        getOptionLabel={(option) => option.product_name}
         renderOption={(props, option) => (
           <li {...props}>
             <Box>
-              <div>{option.name}</div>
+              <div>{option.product_name}</div>
               {showDetails && (
                 <div style={{ fontSize: '0.75rem', color: 'text.secondary' }}>
                   {option.hsn_code && `HSN: ${option.hsn_code} • `}
@@ -186,7 +186,7 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
         ) : (
           products.map((product) => (
             <MenuItem key={product.id} value={product.id}>
-              {product.name}
+              {product.product_name}
               {showDetails && (
                 <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary', ml: 1 }}>
                   ({product.unit} • ₹{product.unit_price})

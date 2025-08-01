@@ -276,7 +276,7 @@ const PurchaseVoucherPage: React.FC = () => {
                         >
                           <MenuItem value="" disabled>Select Product</MenuItem>
                           {productList?.map((product: any) => (
-                            <MenuItem key={product.id} value={product.name}>{product.name}</MenuItem>
+                            <MenuItem key={product.id} value={product.product_name}>{product.product_name}</MenuItem>
                           ))}
                         </Select>
                         {errors.items?.[index]?.name && <Typography color="error" variant="caption">Required</Typography>}
