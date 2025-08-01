@@ -35,11 +35,11 @@ export default function Dashboard() {
   const [showCompanyModal, setShowCompanyModal] = useState<boolean>(false);
 
   const { data: purchaseVouchers } = useQuery('purchaseVouchers', () =>
-    voucherService.getPurchaseVouchers({ limit: 5 })
+    voucherService.getVouchers('purchase', { limit: 5 })
   );
 
   const { data: salesVouchers } = useQuery('salesVouchers', () =>
-    voucherService.getSalesVouchers({ limit: 5 })
+    voucherService.getVouchers('sales', { limit: 5 })
   );
 
   const { data: lowStock } = useQuery('lowStock', () =>

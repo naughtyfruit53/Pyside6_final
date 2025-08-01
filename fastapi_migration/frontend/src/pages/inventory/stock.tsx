@@ -42,6 +42,13 @@ import 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
+// Type declaration for jsPDF autoTable extension
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
 const StockManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const [searchText, setSearchText] = useState('');

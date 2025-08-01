@@ -90,7 +90,7 @@ const ProformaInvoicePage: React.FC = () => {
 
   const { data: voucherList, isLoading: isLoadingList } = useQuery(
     ['proformaInvoices'],
-    () => voucherService.getProformaInvoices() // Assume this method exists
+    () => voucherService.getVouchers('proforma') // Use generic getVouchers method
   );
 
   const { data: customerList } = useQuery(
@@ -105,7 +105,7 @@ const ProformaInvoicePage: React.FC = () => {
 
   const { data: voucherData, isLoading: isFetching } = useQuery(
     ['proformaInvoice', selectedId],
-    () => voucherService.getProformaInvoiceById(selectedId!),
+    () => voucherService.getVoucherById('proforma', selectedId!),
     { enabled: !!selectedId }
   );
 

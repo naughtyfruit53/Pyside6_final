@@ -1,6 +1,6 @@
 // fastapi_migration/frontend/src/lib/jwtUtils.ts
 
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 export const decodeToken = (token: string): any => {
   try {

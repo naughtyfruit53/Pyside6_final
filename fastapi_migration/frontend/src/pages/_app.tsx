@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Layout from '../components/Layout'; // Adjust path if needed
+import Layout from '../components/layout'; // Use lowercase layout
 import { useRouter } from 'next/router';
 import { authService } from '../services/authService'; // Adjust path if needed
 

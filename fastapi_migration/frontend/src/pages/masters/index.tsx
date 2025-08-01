@@ -48,7 +48,7 @@ import {
   Visibility
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { masterDataService, reportsService } from '../../services/authService';
+import { masterDataService, reportsService, companyService } from '../../services/authService';
 import ExcelImportExport from '../../components/ExcelImportExport';
 import { bulkImportVendors, bulkImportCustomers, bulkImportProducts } from '../../services/masterService';
 
@@ -152,6 +152,9 @@ const MasterDataManagement: React.FC = () => {
     drawings_path: ''
   });
 
+  // Company dialog state
+  const [companyEditDialog, setCompanyEditDialog] = useState(false);
+
   const queryClient = useQueryClient();
 
   // Update tab from URL
@@ -181,7 +184,7 @@ const MasterDataManagement: React.FC = () => {
   const { data: vendors, isLoading: vendorsLoading } = useQuery('vendors', masterDataService.getVendors, { enabled: tabValue === 0 });
   const { data: customers, isLoading: customersLoading } = useQuery('customers', masterDataService.getCustomers, { enabled: tabValue === 1 });
   const { data: products, isLoading: productsLoading } = useQuery('products', masterDataService.getProducts, { enabled: tabValue === 2 });
-  const { data: company } = useQuery('company', masterDataService.getCompany, { enabled: tabValue === 4 }); // Assuming getCompany for /companies/current
+  const { data: company } = useQuery('company', companyService.getCurrentCompany, { enabled: tabValue === 4 });
 
   // Mutations for bulk import
   const importVendorsMutation = useMutation(bulkImportVendors, {
@@ -244,6 +247,15 @@ const MasterDataManagement: React.FC = () => {
         importProductsMutation.mutate(importedData);
         break;
     }
+  };
+
+  // Company edit dialog functions
+  const openCompanyEditDialog = () => {
+    setCompanyEditDialog(true);
+  };
+
+  const closeCompanyEditDialog = () => {
+    setCompanyEditDialog(false);
   };
 
   const openItemDialog = (item: any = null, targetTab?: number) => {
