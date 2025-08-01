@@ -123,7 +123,7 @@ export const voucherService = {
   // Generic function for CRUD
   getVouchers: async (type: string, params?: any) => {
     try {
-      const response = await api.get(`/vouchers/${type}/`, { params });
+      const response = await api.get(`/vouchers/${type}`, { params });
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || `Failed to fetch ${type}`);
@@ -132,7 +132,7 @@ export const voucherService = {
 
   createVoucher: async (type: string, data: any, sendEmail = false) => {
     try {
-      const response = await api.post(`/vouchers/${type}/?send_email=${sendEmail}`, data);
+      const response = await api.post(`/vouchers/${type}?send_email=${sendEmail}`, data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || `Failed to create ${type}`);
@@ -178,6 +178,53 @@ export const voucherService = {
 
   getSalesVouchers: async (params?: any) => {
     return voucherService.getVouchers('sales', params);
+  },
+
+  // Purchase Order specific methods
+  getPurchaseOrders: async (params?: any) => {
+    return voucherService.getVouchers('purchase_order', params);
+  },
+
+  getPurchaseOrderById: async (id: number) => {
+    return voucherService.getVoucherById('purchase_order', id);
+  },
+
+  createPurchaseOrder: async (data: any, sendEmail = false) => {
+    return voucherService.createVoucher('purchase_order', data, sendEmail);
+  },
+
+  updatePurchaseOrder: async (id: number, data: any) => {
+    return voucherService.updateVoucher('purchase_order', id, data);
+  },
+
+  // GRN specific methods
+  getGrns: async (params?: any) => {
+    return voucherService.getVouchers('grn', params);
+  },
+
+  getGrnById: async (id: number) => {
+    return voucherService.getVoucherById('grn', id);
+  },
+
+  createGrn: async (data: any, sendEmail = false) => {
+    return voucherService.createVoucher('grn', data, sendEmail);
+  },
+
+  updateGrn: async (id: number, data: any) => {
+    return voucherService.updateVoucher('grn', id, data);
+  },
+
+  // Access to master data for vouchers
+  getVendors: async (params?: any) => {
+    return masterDataService.getVendors(params);
+  },
+
+  getProducts: async (params?: any) => {
+    return masterDataService.getProducts(params);
+  },
+
+  getCustomers: async (params?: any) => {
+    return masterDataService.getCustomers(params);
   },
 };
 
