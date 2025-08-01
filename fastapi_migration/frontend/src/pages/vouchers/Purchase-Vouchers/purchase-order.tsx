@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import { Box, Button, TextField, Typography, Grid, IconButton, Alert, CircularProgress, Container, Checkbox, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem } from '@mui/material';
+import { Box, Button, TextField, Typography, Grid, IconButton, Alert, CircularProgress, Container, Checkbox, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Add, Remove, Edit, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { voucherService } from '../../../services/authService';
@@ -438,114 +438,62 @@ const PurchaseOrderPage: React.FC = () => {
       </Grid>
 
       {/* Add Vendor Dialog */}
-      <Box component="div">
-        {addVendorDialogOpen && (
-          <Box
-            sx={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              bgcolor: 'background.paper',
-              boxShadow: 24,
-              p: 4,
-              borderRadius: 2,
-              zIndex: 1300,
-              minWidth: 400
+      <Dialog
+        open={addVendorDialogOpen}
+        onClose={() => setAddVendorDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add New Vendor</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            You can create a new vendor by going to the vendor management page, or continue with the current flow.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddVendorDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setAddVendorDialogOpen(false);
+              router.push('/masters/vendors');
             }}
           >
-            <Typography variant="h6" gutterBottom>
-              Add New Vendor
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Redirecting to vendor creation page...
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              <Button onClick={() => setAddVendorDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="contained" 
-                onClick={() => {
-                  setAddVendorDialogOpen(false);
-                  router.push('/masters/vendors');
-                }}
-              >
-                Go to Vendors
-              </Button>
-            </Box>
-          </Box>
-        )}
-        {addVendorDialogOpen && (
-          <Box
-            sx={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: 'rgba(0, 0, 0, 0.5)',
-              zIndex: 1200
-            }}
-            onClick={() => setAddVendorDialogOpen(false)}
-          />
-        )}
-      </Box>
+            Go to Vendors
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Product Dialog */}
-      <Box component="div">
-        {addProductDialogOpen && (
-          <Box
-            sx={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              bgcolor: 'background.paper',
-              boxShadow: 24,
-              p: 4,
-              borderRadius: 2,
-              zIndex: 1300,
-              minWidth: 400
+      <Dialog
+        open={addProductDialogOpen}
+        onClose={() => setAddProductDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add New Product</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            You can create a new product by going to the product management page, or continue with the current flow.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddProductDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setAddProductDialogOpen(false);
+              router.push('/masters/products');
             }}
           >
-            <Typography variant="h6" gutterBottom>
-              Add New Product
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Redirecting to product creation page...
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              <Button onClick={() => setAddProductDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="contained" 
-                onClick={() => {
-                  setAddProductDialogOpen(false);
-                  router.push('/masters/products');
-                }}
-              >
-                Go to Products
-              </Button>
-            </Box>
-          </Box>
-        )}
-        {addProductDialogOpen && (
-          <Box
-            sx={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: 'rgba(0, 0, 0, 0.5)',
-              zIndex: 1200
-            }}
-            onClick={() => setAddProductDialogOpen(false)}
-          />
-        )}
-      </Box>
+            Go to Products
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
