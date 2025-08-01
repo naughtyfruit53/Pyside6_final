@@ -3,8 +3,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_admin_user, require_current_organization_id  # Updated import for require_current_organization_id
-from app.core.tenant import TenantQueryMixin
+from app.api.auth import (
+    get_current_active_user, get_current_admin_user, 
+    require_current_organization_id, validate_organization_access,
+    get_tenant_db_session
+)
+from app.core.tenant import TenantQueryFilter, TenantContext
 from app.models.base import User, Vendor
 from app.schemas.base import VendorCreate, VendorUpdate, VendorInDB, BulkImportResponse
 from app.services.excel_service import VendorExcelService, ExcelService
@@ -19,17 +23,24 @@ async def get_vendors(
     limit: int = 100,
     search: Optional[str] = None,
     active_only: bool = True,
+    organization_id: Optional[int] = None,  # Allow platform users to specify org
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get vendors in current organization"""
+    """Get vendors with strict organization-level filtering"""
     
-    query = db.query(Vendor)
+    # Validate organization access for platform users
+    if organization_id and getattr(current_user, 'is_platform_user', False):
+        validate_organization_access(organization_id, current_user, db)
+        target_org_id = organization_id
+    else:
+        # Regular users use their organization
+        target_org_id = require_current_organization_id(current_user)
     
-    # Apply tenant filtering for non-super-admin users
-    if not current_user.is_super_admin:
-        org_id = require_current_organization_id()
-        query = TenantQueryMixin.filter_by_tenant(query, Vendor, org_id)
+    # Create tenant-scoped query
+    query = TenantQueryFilter.apply_organization_filter(
+        db.query(Vendor), Vendor, target_org_id, current_user
+    )
     
     if active_only:
         query = query.filter(Vendor.is_active == True)
@@ -48,6 +59,164 @@ async def get_vendors(
 @router.get("/{vendor_id}", response_model=VendorInDB)
 async def get_vendor(
     vendor_id: int,
+    organization_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get vendor by ID with organization validation"""
+    
+    # Validate organization access
+    if organization_id and getattr(current_user, 'is_platform_user', False):
+        validate_organization_access(organization_id, current_user, db)
+        target_org_id = organization_id
+    else:
+        target_org_id = require_current_organization_id(current_user)
+    
+    # Find vendor with organization filter
+    vendor = TenantQueryFilter.apply_organization_filter(
+        db.query(Vendor), Vendor, target_org_id, current_user
+    ).filter(Vendor.id == vendor_id).first()
+    
+    if not vendor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vendor {vendor_id} not found in organization {target_org_id}"
+        )
+    
+    return vendor
+
+@router.post("/", response_model=VendorInDB)
+async def create_vendor(
+    vendor: VendorCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create new vendor with organization validation"""
+    
+    # Validate and set organization_id
+    vendor_data = vendor.dict()
+    vendor_data = TenantQueryFilter.validate_organization_data(vendor_data, current_user)
+    
+    # Check for duplicate vendor name in organization
+    existing_vendor = TenantQueryFilter.apply_organization_filter(
+        db.query(Vendor), Vendor, vendor_data['organization_id'], current_user
+    ).filter(Vendor.name == vendor_data['name']).first()
+    
+    if existing_vendor:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Vendor with name '{vendor_data['name']}' already exists in this organization"
+        )
+    
+    # Create vendor
+    db_vendor = Vendor(**vendor_data)
+    db.add(db_vendor)
+    db.commit()
+    db.refresh(db_vendor)
+    
+    logger.info(f"Created vendor {db_vendor.name} (ID: {db_vendor.id}) in organization {db_vendor.organization_id}")
+    return db_vendor
+
+@router.put("/{vendor_id}", response_model=VendorInDB)
+async def update_vendor(
+    vendor_id: int,
+    vendor: VendorUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update vendor with organization validation"""
+    
+    # Get target organization
+    target_org_id = require_current_organization_id(current_user)
+    
+    # Find existing vendor
+    db_vendor = TenantQueryFilter.apply_organization_filter(
+        db.query(Vendor), Vendor, target_org_id, current_user
+    ).filter(Vendor.id == vendor_id).first()
+    
+    if not db_vendor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vendor {vendor_id} not found in organization {target_org_id}"
+        )
+    
+    # Update vendor
+    update_data = vendor.dict(exclude_unset=True)
+    
+    # Check for duplicate name if name is being updated
+    if 'name' in update_data and update_data['name'] != db_vendor.name:
+        existing_vendor = TenantQueryFilter.apply_organization_filter(
+            db.query(Vendor), Vendor, target_org_id, current_user
+        ).filter(
+            Vendor.name == update_data['name'],
+            Vendor.id != vendor_id
+        ).first()
+        
+        if existing_vendor:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Vendor with name '{update_data['name']}' already exists in this organization"
+            )
+    
+    for field, value in update_data.items():
+        setattr(db_vendor, field, value)
+    
+    db.commit()
+    db.refresh(db_vendor)
+    
+    logger.info(f"Updated vendor {db_vendor.name} (ID: {db_vendor.id}) in organization {db_vendor.organization_id}")
+    return db_vendor
+
+@router.delete("/{vendor_id}")
+async def delete_vendor(
+    vendor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)  # Require admin for deletion
+):
+    """Delete vendor with organization validation"""
+    
+    # Get target organization
+    target_org_id = require_current_organization_id(current_user)
+    
+    # Find existing vendor
+    db_vendor = TenantQueryFilter.apply_organization_filter(
+        db.query(Vendor), Vendor, target_org_id, current_user
+    ).filter(Vendor.id == vendor_id).first()
+    
+    if not db_vendor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vendor {vendor_id} not found in organization {target_org_id}"
+        )
+    
+    # Soft delete by marking inactive
+    db_vendor.is_active = False
+    db.commit()
+    
+    logger.info(f"Deleted vendor {db_vendor.name} (ID: {db_vendor.id}) in organization {db_vendor.organization_id}")
+    return {"message": f"Vendor {vendor_id} deleted successfully"}
+
+@router.post("/search", response_model=List[VendorInDB])
+async def search_vendors_for_dropdown(
+    search_term: str,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Search vendors for dropdown/autocomplete with organization filtering"""
+    
+    # Get target organization
+    target_org_id = require_current_organization_id(current_user)
+    
+    # Search active vendors
+    vendors = TenantQueryFilter.apply_organization_filter(
+        db.query(Vendor), Vendor, target_org_id, current_user
+    ).filter(
+        Vendor.is_active == True,
+        Vendor.name.contains(search_term)
+    ).limit(limit).all()
+    
+    return vendors
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):

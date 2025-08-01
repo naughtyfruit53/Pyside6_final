@@ -11,13 +11,30 @@ if not database_url:
     database_url = "sqlite:///./tritiq_erp.db"
     logger.info("No DATABASE_URL configured, using SQLite: tritiq_erp.db")
 
+# Database engine configuration
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "echo": settings.DEBUG
+}
+
+# PostgreSQL/Supabase specific configuration
+if database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
+    engine_kwargs.update({
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+    })
+    logger.info("Using PostgreSQL/Supabase database configuration")
+elif database_url.startswith("sqlite://"):
+    # SQLite specific configuration
+    engine_kwargs.update({
+        "connect_args": {"check_same_thread": False}
+    })
+    logger.info("Using SQLite database configuration")
+
 # Database engine
-engine = create_engine(
-    database_url,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    echo=settings.DEBUG
-)
+engine = create_engine(database_url, **engine_kwargs)
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, JSON, Index
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, JSON, Index, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -83,6 +83,10 @@ class Organization(Base):
     # Relationships
     users = relationship("User", back_populates="organization")
     companies = relationship("Company", back_populates="organization")
+    vendors = relationship("Vendor", back_populates="organization")
+    customers = relationship("Customer", back_populates="organization")
+    products = relationship("Product", back_populates="organization")
+    stock_entries = relationship("Stock", back_populates="organization")
     
     __table_args__ = (
         Index('idx_org_status_subdomain', 'status', 'subdomain'),
@@ -93,10 +97,8 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # Multi-tenant fields
-    # organization_id will be made non-nullable in upcoming migration - only for organization users
-    # Platform-level users are now in separate platform_users table
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)  # TODO: Make non-nullable after migration
+    # Multi-tenant fields - REQUIRED for all organization users
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
     
     # User credentials
     email = Column(String, nullable=False, index=True)
@@ -105,14 +107,13 @@ class User(Base):
     
     # User details
     full_name = Column(String)
-    role = Column(String, nullable=False, default="standard_user")  # super_admin, org_admin, admin, standard_user
+    role = Column(String, nullable=False, default="standard_user")  # org_admin, admin, standard_user
     department = Column(String)
     designation = Column(String)
     employee_id = Column(String)
     
     # Permissions and status
     is_active = Column(Boolean, default=True)
-    is_super_admin = Column(Boolean, default=False)  # System-wide admin
     must_change_password = Column(Boolean, default=False)
     
     # Profile
@@ -132,6 +133,10 @@ class User(Base):
     organization = relationship("Organization", back_populates="users")
     
     __table_args__ = (
+        # Unique email per organization
+        UniqueConstraint('organization_id', 'email', name='uq_user_org_email'),
+        # Unique username per organization
+        UniqueConstraint('organization_id', 'username', name='uq_user_org_username'),
         Index('idx_user_org_email', 'organization_id', 'email'),
         Index('idx_user_org_username', 'organization_id', 'username'),
         Index('idx_user_org_active', 'organization_id', 'is_active'),
@@ -196,7 +201,12 @@ class Vendor(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Relationships
+    organization = relationship("Organization", back_populates="vendors")
+    
     __table_args__ = (
+        # Unique vendor name per organization
+        UniqueConstraint('organization_id', 'name', name='uq_vendor_org_name'),
         Index('idx_vendor_org_name', 'organization_id', 'name'),
         Index('idx_vendor_org_active', 'organization_id', 'is_active'),
     )
@@ -227,7 +237,12 @@ class Customer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Relationships
+    organization = relationship("Organization", back_populates="customers")
+    
     __table_args__ = (
+        # Unique customer name per organization
+        UniqueConstraint('organization_id', 'name', name='uq_customer_org_name'),
         Index('idx_customer_org_name', 'organization_id', 'name'),
         Index('idx_customer_org_active', 'organization_id', 'is_active'),
     )
@@ -258,9 +273,17 @@ class Product(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Relationships
+    organization = relationship("Organization", back_populates="products")
+    
     __table_args__ = (
+        # Unique product name per organization
+        UniqueConstraint('organization_id', 'name', name='uq_product_org_name'),
+        # Unique part number per organization (if provided)
+        UniqueConstraint('organization_id', 'part_number', name='uq_product_org_part_number'),
         Index('idx_product_org_name', 'organization_id', 'name'),
         Index('idx_product_org_active', 'organization_id', 'is_active'),
+        Index('idx_product_org_hsn', 'organization_id', 'hsn_code'),
     )
 
 class Stock(Base):
@@ -278,10 +301,15 @@ class Stock(Base):
     location = Column(String)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
+    # Relationships
+    organization = relationship("Organization", back_populates="stock_entries")
     product = relationship("Product", backref="stock_entries")
     
     __table_args__ = (
+        # Unique stock entry per product per organization per location
+        UniqueConstraint('organization_id', 'product_id', 'location', name='uq_stock_org_product_location'),
         Index('idx_stock_org_product', 'organization_id', 'product_id'),
+        Index('idx_stock_org_location', 'organization_id', 'location'),
     )
 
 class AuditLog(Base):
