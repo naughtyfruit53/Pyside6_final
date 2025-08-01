@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useRouter } from 'next/router';
+import { organizationService } from '../../services/authService';
 
 interface Organization {
   id: number;
@@ -70,21 +71,14 @@ const LicenseManagement: React.FC = () => {
     pin_code: ''
   });
 
-  // Mock API calls - replace with actual service calls
+  // API calls using real service
   const { data: organizations, isLoading } = useQuery(
     'organizations',
-    async () => {
-      // Replace with actual API call
-      return [];
-    }
+    organizationService.getAllOrganizations
   );
 
   const createLicenseMutation = useMutation(
-    async (data: any) => {
-      // Replace with actual API call
-      console.log('Creating license:', data);
-      return { message: 'License created successfully' };
-    },
+    organizationService.createLicense,
     {
       onSuccess: () => {
         queryClient.invalidateQueries('organizations');
@@ -95,9 +89,17 @@ const LicenseManagement: React.FC = () => {
   );
 
   const updateOrganizationMutation = useMutation(
-    async ({ orgId, action }: { orgId: number; action: string }) => {
-      // Replace with actual API call
-      console.log('Updating organization:', orgId, action);
+    async ({ orgId, action, data }: { orgId: number; action: string; data?: any }) => {
+      // Map actions to appropriate API calls
+      if (action === 'activate') {
+        return organizationService.updateOrganizationById(orgId, { status: 'active' });
+      } else if (action === 'hold') {
+        return organizationService.updateOrganizationById(orgId, { status: 'suspended' });
+      } else if (action === 'reset') {
+        // TODO: Implement password reset API call
+        console.log('Password reset for org:', orgId);
+        return { message: 'Password reset successfully' };
+      }
       return { message: `Organization ${action} successfully` };
     },
     {
@@ -125,7 +127,11 @@ const LicenseManagement: React.FC = () => {
   };
 
   const handleCreateLicense = () => {
-    createLicenseMutation.mutate(formData);
+    const licenseData = {
+      organization_name: formData.organization_name,
+      superadmin_email: formData.primary_email
+    };
+    createLicenseMutation.mutate(licenseData);
   };
 
   const handleAction = (org: Organization, action: 'hold' | 'activate' | 'reset') => {

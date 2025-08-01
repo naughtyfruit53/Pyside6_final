@@ -165,7 +165,7 @@ class ProductExcelService:
     """Excel service specifically for Products"""
     
     COLUMNS = [
-        {"name": "Name", "field": "name", "example": "Steel Bolt M8x50", "width": 20},
+        {"name": "Product Name", "field": "product_name", "example": "Steel Bolt M8x50", "width": 20},
         {"name": "HSN Code", "field": "hsn_code", "example": "73181590", "width": 12},
         {"name": "Part Number", "field": "part_number", "example": "SB-M8-50", "width": 15},
         {"name": "Unit", "field": "unit", "example": "PCS", "width": 10},
@@ -179,7 +179,7 @@ class ProductExcelService:
         {"name": "Initial Location", "field": "initial_location", "example": "Warehouse A", "width": 15},
     ]
     
-    REQUIRED_COLUMNS = ["Name", "Unit", "Unit Price"]
+    REQUIRED_COLUMNS = ["Product Name", "Unit", "Unit Price"]
     
     @staticmethod
     def create_template() -> bytes:

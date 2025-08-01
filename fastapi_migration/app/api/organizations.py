@@ -431,15 +431,17 @@ async def get_organization_by_subdomain(
         )
     
     return org
-@router.post("/reset-data", status_code=status.HTTP_200_OK)
+
+@router.post("/reset-data")
 async def reset_organization_data(
     organization_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Reset organization data"""
+    """Reset organization data (Organization Admin) or all data (Super Admin)"""
+    from app.services.reset_service import ResetService
+    
     try:
-        # Determine which organization(s) to reset
         if current_user.is_super_admin:
             # Super admin can reset all data or specific organization
             if organization_id:
@@ -450,118 +452,39 @@ async def reset_organization_data(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail="Organization not found"
                     )
-                reset_organization_tables(db, organization_id)
+                result = ResetService.reset_organization_data(db, organization_id)
                 logger.info(f"Super admin {current_user.email} reset data for organization {org.name}")
-                return {"message": f"Data reset successfully for organization: {org.name}"}
+                return {
+                    "message": f"Data reset successfully for organization: {org.name}",
+                    "details": result["deleted"]
+                }
             else:
-                # Reset all organizations
-                reset_all_data(db)
+                # Reset all data
+                result = ResetService.reset_all_data(db)
                 logger.info(f"Super admin {current_user.email} reset all data")
-                return {"message": "All data reset successfully"}
-        
-        elif current_user.role in [UserRole.ORG_ADMIN]:
-            # Organization admin can only reset their own organization's data
-            if not current_user.organization_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="No organization associated with user"
-                )
-            
+                return {
+                    "message": "All system data has been reset successfully",
+                    "details": result["deleted"]
+                }
+        elif current_user.role in [UserRole.ORG_ADMIN] and current_user.organization_id:
+            # Organization admin can reset their organization data only
             org = db.query(Organization).filter(Organization.id == current_user.organization_id).first()
-            reset_organization_tables(db, current_user.organization_id)
+            result = ResetService.reset_organization_data(db, current_user.organization_id)
             logger.info(f"Org admin {current_user.email} reset data for their organization {org.name}")
-            return {"message": f"Data reset successfully for your organization: {org.name}"}
-        
+            return {
+                "message": f"Organization data has been reset successfully for: {org.name}", 
+                "details": result["deleted"]
+            }
         else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions. Only organization administrators and super administrators can reset data."
+                detail="You don't have permission to reset data. Only organization administrators and super administrators can reset data."
             )
-            
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error resetting data: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error resetting data"
-        )
-
-def reset_organization_tables(db: Session, org_id: int):
-    """Reset data for a specific organization, preserving table structure"""
-    from app.models.base import Company, Vendor, Customer, Product, Stock, AuditLog, EmailNotification, PaymentTerm
-    
-    # Delete data for the organization (preserves table structure)
-    db.query(EmailNotification).filter(EmailNotification.organization_id == org_id).delete()
-    db.query(AuditLog).filter(AuditLog.organization_id == org_id).delete()  
-    db.query(Stock).filter(Stock.organization_id == org_id).delete()
-    db.query(Product).filter(Product.organization_id == org_id).delete()
-    db.query(PaymentTerm).filter(PaymentTerm.organization_id == org_id).delete()
-    db.query(Customer).filter(Customer.organization_id == org_id).delete()
-    db.query(Vendor).filter(Vendor.organization_id == org_id).delete()
-    db.query(Company).filter(Company.organization_id == org_id).delete()
-    
-    # Reset organization flags
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if org:
-        org.company_details_completed = False
-    
-    db.commit()
-
-
-@router.post("/reset-data")
-async def reset_organization_data(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Reset organization data (Organization Admin) or all data (Super Admin)"""
-    from app.services.reset_service import ResetService
-    
-    try:
-        if current_user.is_super_admin:
-            # Super admin can reset all data
-            result = ResetService.reset_all_data(db)
-            return {
-                "message": "All system data has been reset successfully",
-                "details": result["deleted"]
-            }
-        elif current_user.role in ["org_admin", "admin"] and current_user.organization_id:
-            # Organization admin can reset their organization data
-            result = ResetService.reset_organization_data(db, current_user.organization_id)
-            return {
-                "message": "Organization data has been reset successfully", 
-                "details": result["deleted"]
-            }
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to reset data"
-            )
     except Exception as e:
         logger.error(f"Error resetting data: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset data. Please try again."
         )
-
-
-def reset_all_data(db: Session):
-    """Reset all data except super admin user and organization structures"""
-    from app.models.base import Company, Vendor, Customer, Product, Stock, AuditLog, EmailNotification, PaymentTerm
-    
-    # Delete all business data (preserves table structure)
-    db.query(EmailNotification).delete()
-    db.query(AuditLog).delete()
-    db.query(Stock).delete()
-    db.query(Product).delete()
-    db.query(PaymentTerm).delete()
-    db.query(Customer).delete()
-    db.query(Vendor).delete()
-    db.query(Company).delete()
-    
-    # Delete non-super-admin users and organizations
-    db.query(User).filter(User.is_super_admin == False).delete()
-    db.query(Organization).delete()
-    db.commit()
-    
-    db.commit()

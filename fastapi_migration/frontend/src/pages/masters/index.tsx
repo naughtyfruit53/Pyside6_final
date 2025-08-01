@@ -253,7 +253,7 @@ const MasterDataManagement: React.FC = () => {
     setSelectedItem(item);
     if (item) {
       setFormData({
-        name: item.name || '',
+        name: item.name || item.product_name || '',  // Handle both name and product_name fields
         address1: item.address1 || item.address || '',
         address2: item.address2 || '',
         city: item.city || '',
@@ -455,7 +455,7 @@ const MasterDataManagement: React.FC = () => {
                   </>
                 ) : type === 'products' ? (
                   <>
-                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.product_name}</TableCell>
                     <TableCell>{item.hsn_code || 'N/A'}</TableCell>
                     <TableCell>{item.unit || 'N/A'}</TableCell>
                     <TableCell>₹{item.unit_price?.toLocaleString() || 0}</TableCell>
