@@ -396,10 +396,10 @@ class ProductInDB(ProductBase):
     class Config:
         from_attributes = True
 
-# Product response schema with consistent product_name field
+# Product response schema using name field as required
 class ProductResponse(BaseModel):
     id: int
-    product_name: str  # Consistent field name for API responses
+    name: str  # Use name field as specified in requirements
     hsn_code: Optional[str] = None
     part_number: Optional[str] = None
     unit: str
@@ -420,7 +420,7 @@ class ProductResponse(BaseModel):
         """Create ProductResponse from Product model"""
         return cls(
             id=product.id,
-            product_name=product.name,  # Map name to product_name
+            name=product.name,  # Use name field directly
             hsn_code=product.hsn_code,
             part_number=product.part_number,
             unit=product.unit,

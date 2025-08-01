@@ -1,7 +1,7 @@
 // fastapi_migration/frontend/src/components/RoleGate.tsx
 
 import React, { ReactNode } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 
 interface RoleGateProps {

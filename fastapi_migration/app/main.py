@@ -2,11 +2,11 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from app.core.config import settings
+from app.core.config import settings as config_settings
 from app.core.database import create_tables, SessionLocal
 from app.core.tenant import TenantMiddleware
 from app.core.seed_super_admin import seed_super_admin
-from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations, reports, platform
+from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations, reports, platform, settings
 import logging
 
 # Configure logging
@@ -15,16 +15,16 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    description=settings.DESCRIPTION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=config_settings.PROJECT_NAME,
+    version=config_settings.VERSION,
+    description=config_settings.DESCRIPTION,
+    openapi_url=f"{config_settings.API_V1_STR}/openapi.json"
 )
 
 # Set up CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=config_settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,17 +34,18 @@ app.add_middleware(
 app.add_middleware(TenantMiddleware)
 
 # Include API routers
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["authentication"])
-app.include_router(platform.router, prefix=f"{settings.API_V1_STR}/platform", tags=["platform"])
-app.include_router(organizations.router, prefix=f"{settings.API_V1_STR}/organizations", tags=["organizations"])
-app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
-app.include_router(companies.router, prefix=f"{settings.API_V1_STR}/companies", tags=["companies"])
-app.include_router(vendors.router, prefix=f"{settings.API_V1_STR}/vendors", tags=["vendors"])
-app.include_router(customers.router, prefix=f"{settings.API_V1_STR}/customers", tags=["customers"])
-app.include_router(products.router, prefix=f"{settings.API_V1_STR}/products", tags=["products"])
-app.include_router(stock.router, prefix=f"{settings.API_V1_STR}/stock", tags=["stock"])
-app.include_router(vouchers.router, prefix=f"{settings.API_V1_STR}/vouchers", tags=["vouchers"])
-app.include_router(reports.router, prefix=f"{settings.API_V1_STR}/reports", tags=["reports"])
+app.include_router(auth.router, prefix=f"{config_settings.API_V1_STR}/auth", tags=["authentication"])
+app.include_router(platform.router, prefix=f"{config_settings.API_V1_STR}/platform", tags=["platform"])
+app.include_router(organizations.router, prefix=f"{config_settings.API_V1_STR}/organizations", tags=["organizations"])
+app.include_router(users.router, prefix=f"{config_settings.API_V1_STR}/users", tags=["users"])
+app.include_router(companies.router, prefix=f"{config_settings.API_V1_STR}/companies", tags=["companies"])
+app.include_router(vendors.router, prefix=f"{config_settings.API_V1_STR}/vendors", tags=["vendors"])
+app.include_router(customers.router, prefix=f"{config_settings.API_V1_STR}/customers", tags=["customers"])
+app.include_router(products.router, prefix=f"{config_settings.API_V1_STR}/products", tags=["products"])
+app.include_router(stock.router, prefix=f"{config_settings.API_V1_STR}/stock", tags=["stock"])
+app.include_router(vouchers.router, prefix=f"{config_settings.API_V1_STR}/vouchers", tags=["vouchers"])
+app.include_router(reports.router, prefix=f"{config_settings.API_V1_STR}/reports", tags=["reports"])
+app.include_router(settings.router, prefix=f"{config_settings.API_V1_STR}/settings", tags=["settings"])
 
 @app.on_event("startup")
 async def startup_event():
@@ -80,14 +81,14 @@ async def root():
     """Root endpoint"""
     return {
         "message": "Welcome to TRITIQ ERP API",
-        "version": settings.VERSION,
+        "version": config_settings.VERSION,
         "docs": "/docs"
     }
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "version": settings.VERSION}
+    return {"status": "healthy", "version": config_settings.VERSION}
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
@@ -99,5 +100,5 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG  # Fixed typo: changed --relaod to --reload
+        reload=config_settings.DEBUG  # Fixed typo: changed --relaod to --reload
     )

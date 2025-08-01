@@ -24,8 +24,15 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
     );
   };
 
+  const value = {
+    vouchers,
+    setVouchers,
+    addVoucher,
+    updateVoucher
+  };
+
   return (
-    <VoucherContext.Provider value={{ vouchers, setVouchers, addVoucher, updateVoucher }}>
+    <VoucherContext.Provider value={value}>
       {children}
     </VoucherContext.Provider>
   );

@@ -327,7 +327,7 @@ const ReportsPage: React.FC = () => {
                   InputLabelProps={{ shrink: true }}
                   size="small"
                 />
-                <Button variant="contained" startIcon={<Refresh />} onClick={refetchSales}>
+                <Button variant="contained" startIcon={<Refresh />} onClick={() => refetchSales()}>
                   Refresh
                 </Button>
               </Box>
@@ -367,7 +367,7 @@ const ReportsPage: React.FC = () => {
                   InputLabelProps={{ shrink: true }}
                   size="small"
                 />
-                <Button variant="contained" startIcon={<Refresh />} onClick={refetchPurchase}>
+                <Button variant="contained" startIcon={<Refresh />} onClick={() => refetchPurchase()}>
                   Refresh
                 </Button>
               </Box>
@@ -392,7 +392,7 @@ const ReportsPage: React.FC = () => {
             <TabPanel value={tabValue} index={3}>
               <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6">Inventory Status</Typography>
-                <Button variant="contained" startIcon={<Refresh />} onClick={refetchInventory}>
+                <Button variant="contained" startIcon={<Refresh />} onClick={() => refetchInventory()}>
                   Refresh
                 </Button>
               </Box>
@@ -447,7 +447,7 @@ const ReportsPage: React.FC = () => {
             <TabPanel value={tabValue} index={4}>
               <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6">Pending Orders</Typography>
-                <Button variant="contained" startIcon={<Refresh />} onClick={refetchOrders}>
+                <Button variant="contained" startIcon={<Refresh />} onClick={() => refetchOrders()}>
                   Refresh
                 </Button>
               </Box>
