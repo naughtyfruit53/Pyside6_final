@@ -1,4 +1,4 @@
-// fastapi_migration/frontend/src/contexts/AuthContext.tsx
+// fastapi_migration/frontend/src/context/AuthContext.tsx
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import jwtDecode from '../utils/jwt-decode';

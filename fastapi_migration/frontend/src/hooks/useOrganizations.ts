@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '../utils/api';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export const useOrganizations = () => {
   const { user } = useAuth();

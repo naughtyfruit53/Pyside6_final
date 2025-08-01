@@ -1,7 +1,7 @@
 // fastapi_migration/frontend/src/pages/admin/users/index.tsx
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import RoleGate from '../../components/RoleGate';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';

@@ -1,7 +1,7 @@
 // fastapi_migration/frontend/src/pages/admin/index.tsx
 
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import RoleGate from '../components/RoleGate';
 
