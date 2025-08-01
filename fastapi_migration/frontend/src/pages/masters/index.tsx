@@ -123,11 +123,12 @@ const STATE_CODES: { [key: string]: string } = {
 
 const MasterDataManagement: React.FC = () => {
   const router = useRouter();
-  const { tab } = router.query;
+  const { tab, action } = router.query;
   const [tabValue, setTabValue] = useState(0);
   const [user] = useState({ email: 'demo@example.com', role: 'admin' });
   const [itemDialog, setItemDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '', 
     address1: '', 
@@ -157,7 +158,7 @@ const MasterDataManagement: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Update tab from URL
+  // Update tab from URL and handle auto-open add dialog
   useEffect(() => {
     switch (tab) {
       case 'vendors': setTabValue(0); break;
@@ -167,7 +168,12 @@ const MasterDataManagement: React.FC = () => {
       case 'company': setTabValue(4); break;
       default: setTabValue(0);
     }
-  }, [tab]);
+    
+    // Auto-open add dialog if action=add in URL
+    if (action === 'add') {
+      openItemDialog(null);
+    }
+  }, [tab, action]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -212,6 +218,11 @@ const MasterDataManagement: React.FC = () => {
         setItemDialog(false);
         setSelectedItem(null);
         resetForm();
+        setErrorMessage('');
+      },
+      onError: (error: any) => {
+        console.error('Update error:', error);
+        setErrorMessage(error.message || 'Failed to update item. Please check your input.');
       }
     }
   );
@@ -231,6 +242,17 @@ const MasterDataManagement: React.FC = () => {
         setItemDialog(false);
         setSelectedItem(null);
         resetForm();
+        setErrorMessage('');
+        
+        // Trigger refresh in parent window if opened from voucher
+        if (window.opener) {
+          window.opener.localStorage.setItem('refreshMasterData', 'true');
+          window.close();
+        }
+      },
+      onError: (error: any) => {
+        console.error('Create error:', error);
+        setErrorMessage(error.message || 'Failed to create item. Please check your input.');
       }
     }
   );
@@ -265,7 +287,7 @@ const MasterDataManagement: React.FC = () => {
     setSelectedItem(item);
     if (item) {
       setFormData({
-        name: item.name || item.product_name || '',  // Handle both name and product_name fields
+        name: item.product_name || '',  // Use product_name consistently
         address1: item.address1 || item.address || '',
         address2: item.address2 || '',
         city: item.city || '',
@@ -290,6 +312,7 @@ const MasterDataManagement: React.FC = () => {
     } else {
       resetForm();
     }
+    setErrorMessage(''); // Clear any previous error messages
     setItemDialog(true);
   };
 
@@ -325,6 +348,13 @@ const MasterDataManagement: React.FC = () => {
 
   const handleSubmit = () => {
     const data = { ...formData };
+    
+    // Map frontend field names to backend schema
+    if (tabValue === 0 || tabValue === 1) { // Vendors or Customers
+      data.contact_number = data.contact; // Map contact to contact_number
+      delete data.contact; // Remove old field name
+    }
+    
     if (selectedItem) {
       updateItemMutation.mutate({ ...selectedItem, ...data });
     } else {
@@ -336,6 +366,30 @@ const MasterDataManagement: React.FC = () => {
     const state = e.target.value;
     const state_code = STATE_CODES[state] || '';
     setFormData(prev => ({ ...prev, state, state_code }));
+  };
+
+  const handlePincodeChange = async (e: any) => {
+    const pinCode = e.target.value;
+    setFormData(prev => ({ ...prev, pin_code: pinCode }));
+    
+    // Auto-fill city/state/state_code if pinCode is 6 digits
+    if (pinCode.length === 6 && /^\d{6}$/.test(pinCode)) {
+      try {
+        const response = await fetch(`/api/v1/pincode/lookup/${pinCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFormData(prev => ({ 
+            ...prev, 
+            city: data.city,
+            state: data.state,
+            state_code: data.state_code
+          }));
+        }
+      } catch (error) {
+        console.log('Pincode lookup failed:', error);
+        // Fail silently, user can enter manually
+      }
+    }
   };
 
   // Master data summary with real data
@@ -707,6 +761,11 @@ const MasterDataManagement: React.FC = () => {
       <Dialog open={itemDialog} onClose={() => setItemDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{selectedItem ? 'Edit' : 'Add'} {tabValue === 0 ? 'Vendor' : tabValue === 1 ? 'Customer' : tabValue === 2 ? 'Product' : 'Account'}</DialogTitle>
         <DialogContent>
+          {errorMessage && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {errorMessage}
+            </Alert>
+          )}
           <TextField
             fullWidth
             label="Name"
@@ -729,6 +788,14 @@ const MasterDataManagement: React.FC = () => {
                 value={formData.address2}
                 onChange={(e) => setFormData(prev => ({ ...prev, address2: e.target.value }))}
                 sx={{ mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="PIN Code"
+                value={formData.pin_code}
+                onChange={handlePincodeChange}
+                sx={{ mb: 2 }}
+                helperText="Enter 6-digit PIN code to auto-fill city and state"
               />
               <TextField
                 fullWidth
@@ -758,13 +825,7 @@ const MasterDataManagement: React.FC = () => {
                 value={formData.state_code}
                 onChange={(e) => setFormData(prev => ({ ...prev, state_code: e.target.value }))}
                 sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="PIN Code"
-                value={formData.pin_code}
-                onChange={(e) => setFormData(prev => ({ ...prev, pin_code: e.target.value }))}
-                sx={{ mb: 2 }}
+                helperText="Auto-filled from PIN code or state selection"
               />
               <TextField
                 fullWidth

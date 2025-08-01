@@ -6,7 +6,7 @@ from app.core.config import settings as config_settings
 from app.core.database import create_tables, SessionLocal
 from app.core.tenant import TenantMiddleware
 from app.core.seed_super_admin import seed_super_admin
-from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations, reports, platform, settings
+from app.api import auth, users, companies, vendors, customers, products, vouchers, stock, organizations, reports, platform, settings, pincode
 import logging
 
 # Configure logging
@@ -46,6 +46,7 @@ app.include_router(stock.router, prefix=f"{config_settings.API_V1_STR}/stock", t
 app.include_router(vouchers.router, prefix=f"{config_settings.API_V1_STR}/vouchers", tags=["vouchers"])
 app.include_router(reports.router, prefix=f"{config_settings.API_V1_STR}/reports", tags=["reports"])
 app.include_router(settings.router, prefix=f"{config_settings.API_V1_STR}/settings", tags=["settings"])
+app.include_router(pincode.router, prefix=f"{config_settings.API_V1_STR}/pincode", tags=["pincode"])
 
 @app.on_event("startup")
 async def startup_event():
