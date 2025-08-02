@@ -81,7 +81,7 @@ def test_user(test_db, test_organization):
 def auth_headers(client, test_user):
     """Get authentication headers for test user"""
     response = client.post(
-        "/api/v1/auth/login/email",
+        "/api/auth/login/email",
         json={"email": "testuser@example.com", "password": "oldpassword123"}
     )
     assert response.status_code == 200
@@ -96,7 +96,7 @@ def test_change_password_success(client, auth_headers, test_db, test_user):
     }
     
     response = client.post(
-        "/api/v1/auth/password/change",
+        "/api/auth/password/change",
         json=password_data,
         headers=auth_headers
     )
@@ -117,7 +117,7 @@ def test_change_password_wrong_current(client, auth_headers):
     }
     
     response = client.post(
-        "/api/v1/auth/password/change",
+        "/api/auth/password/change",
         json=password_data,
         headers=auth_headers
     )
@@ -133,7 +133,7 @@ def test_change_password_weak_new_password(client, auth_headers):
     }
     
     response = client.post(
-        "/api/v1/auth/password/change",
+        "/api/auth/password/change",
         json=password_data,
         headers=auth_headers
     )
@@ -148,7 +148,7 @@ def test_change_password_unauthorized(client):
     }
     
     response = client.post(
-        "/api/v1/auth/password/change",
+        "/api/auth/password/change",
         json=password_data
     )
     
@@ -157,7 +157,7 @@ def test_change_password_unauthorized(client):
 def test_forgot_password_valid_email(client, test_user):
     """Test forgot password with valid email"""
     response = client.post(
-        "/api/v1/auth/password/forgot",
+        "/api/auth/password/forgot",
         json={"email": "testuser@example.com"}
     )
     
@@ -167,7 +167,7 @@ def test_forgot_password_valid_email(client, test_user):
 def test_forgot_password_invalid_email(client):
     """Test forgot password with non-existent email"""
     response = client.post(
-        "/api/v1/auth/password/forgot",
+        "/api/auth/password/forgot",
         json={"email": "nonexistent@example.com"}
     )
     
@@ -179,7 +179,7 @@ def test_reset_password_with_otp(client, test_user):
     """Test password reset with OTP"""
     # First request OTP
     forgot_response = client.post(
-        "/api/v1/auth/password/forgot",
+        "/api/auth/password/forgot",
         json={"email": "testuser@example.com"}
     )
     assert forgot_response.status_code == 200
@@ -200,7 +200,7 @@ def test_reset_password_with_otp(client, test_user):
     
     # For demonstration purposes, we'll test the endpoint structure
     response = client.post(
-        "/api/v1/auth/password/reset",
+        "/api/auth/password/reset",
         json=reset_data
     )
     
@@ -217,7 +217,7 @@ def test_reset_password_invalid_otp(client, test_user):
     }
     
     response = client.post(
-        "/api/v1/auth/password/reset",
+        "/api/auth/password/reset",
         json=reset_data
     )
     
@@ -228,7 +228,7 @@ def test_reset_password_validation_errors(client):
     """Test password reset with validation errors"""
     # Missing required fields
     response = client.post(
-        "/api/v1/auth/password/reset",
+        "/api/auth/password/reset",
         json={"email": "test@example.com"}
     )
     
@@ -236,7 +236,7 @@ def test_reset_password_validation_errors(client):
     
     # Weak password
     response = client.post(
-        "/api/v1/auth/password/reset",
+        "/api/auth/password/reset",
         json={
             "email": "test@example.com",
             "otp": "123456",

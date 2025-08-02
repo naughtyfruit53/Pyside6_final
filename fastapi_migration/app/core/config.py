@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
     
     # Super Admin Configuration
-    SUPER_ADMIN_EMAILS: List[str] = ["admin@tritiq.com", "superadmin@tritiq.com"]
+    SUPER_ADMIN_EMAILS: List[str] = ["admin@tritiq.com", "superadmin@tritiq.com", "naughtyfruit53@gmail.com"]
     
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
