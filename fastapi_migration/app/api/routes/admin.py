@@ -96,29 +96,19 @@ async def reset_user_password(
         email_sent = False
         email_error = None
         
-        if target_user.email and email_service.smtp_username:
+        if target_user.email:
             try:
-                subject = "TRITIQ ERP - Password Reset"
-                body = f"""
-Dear {target_user.full_name or target_user.email},
-
-Your password has been reset by a system administrator.
-
-New Password: {new_password}
-
-For security reasons, you will be required to change this password on your next login.
-
-If you did not request this password reset, please contact your system administrator immediately.
-
-Best regards,
-TRITIQ ERP Team
-"""
-                email_sent = email_service._send_email(target_user.email, subject, body)
+                email_sent, email_error = email_service.send_password_reset_email(
+                    user_email=target_user.email,
+                    user_name=target_user.full_name or target_user.email,
+                    new_password=new_password,
+                    reset_by=current_user.email,
+                    organization_name=target_user.organization.name if target_user.organization else None
+                )
                 
                 if email_sent:
                     log_password_reset(target_user.email, current_user.email, True)
                 else:
-                    email_error = "Email sending failed"
                     log_password_reset(target_user.email, current_user.email, False)
                 
             except Exception as e:
@@ -126,7 +116,7 @@ TRITIQ ERP Team
                 logger.error(f"Failed to send password reset email to {target_user.email}: {e}")
                 log_password_reset(target_user.email, current_user.email, False)
         else:
-            email_error = "Email not configured or user has no email"
+            email_error = "User has no email address"
         
         # Commit the changes
         db.commit()
