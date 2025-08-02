@@ -1,6 +1,6 @@
 fastapi_migration/
+│   ├── .migrate_super_admin.py
 │   ├── generate_structure.py
-│   ├── migrate.py
 │   ├── app/
 │   │   ├── main.py
 │   │   ├── __init__.py
@@ -10,12 +10,17 @@ fastapi_migration/
 │   │   │   ├── companies.py
 │   │   │   ├── customers.py
 │   │   │   ├── organizations.py
+│   │   │   ├── pincode.py
+│   │   │   ├── platform.py
 │   │   │   ├── products.py
 │   │   │   ├── reports.py
+│   │   │   ├── settings.py
 │   │   │   ├── stock.py
 │   │   │   ├── users.py
 │   │   │   ├── vendors.py
 │   │   │   ├── __init__.py
+│   │   │   ├── routes/
+│   │   │   │   ├── admin.py
 │   │   │   ├── vouchers/
 │   │   │   │   ├── accounting.py
 │   │   │   │   ├── email.py
@@ -25,12 +30,17 @@ fastapi_migration/
 │   │   │   │   ├── sales.py
 │   │   │   │   ├── __init__.py
 │   │   ├── core/
+│   │   │   ├── .deps.py
 │   │   │   ├── config.py
 │   │   │   ├── database.py
+│   │   │   ├── logging.py
 │   │   │   ├── security.py
+│   │   │   ├── seed_super_admin.py
 │   │   │   ├── tenant.py
 │   │   │   ├── tenant_config.py
 │   │   │   ├── __init__.py
+│   │   ├── db/
+│   │   │   ├── session.py
 │   │   ├── models/
 │   │   │   ├── base.py
 │   │   │   ├── vouchers.py
@@ -45,14 +55,21 @@ fastapi_migration/
 │   │   │   ├── email_service.py
 │   │   │   ├── excel_service.py
 │   │   │   ├── otp_service.py
+│   │   │   ├── reset_service.py
 │   │   │   ├── security_services.py
+│   │   │   ├── voucher_service.py
 │   │   │   ├── __init__.py
 │   │   ├── static/
 │   │   ├── templates/
+│   │   │   ├── email/
 │   │   │   ├── excel/
+│   │   ├── tests/
+│   │   │   ├── test_admin.py
+│   │   │   ├── test_vouchers.py
 │   │   ├── utils/
 │   │   │   ├── excel_import.py
 │   │   │   ├── __init__.py
+│   ├── docs/
 │   ├── frontend/
 │   │   ├── src/
 │   │   │   ├── components/
@@ -65,6 +82,7 @@ fastapi_migration/
 │   │   │   │   │   ├── users/
 │   │   │   │   ├── inventory/
 │   │   │   │   ├── masters/
+│   │   │   │   ├── settings/
 │   │   │   │   ├── vouchers/
 │   │   │   │   │   ├── Pre-Sales-Voucher/
 │   │   │   │   │   ├── Purchase-Vouchers/
@@ -73,20 +91,33 @@ fastapi_migration/
 │   │   │   ├── types/
 │   │   │   ├── utils/
 │   │   │   │   ├── apiUtils.py
+│   ├── logs/
 │   ├── migrations/
-│   │   ├── 003_seed_company.py
 │   │   ├── env.py
 │   │   ├── versions/
-│   │   │   ├── 001_initial.py
-│   │   │   ├── 002_voucher_tables.py
-│   │   │   ├── f337f52a11a5_seed_default_company.py
+│   │   │   ├── 42429b6c6684_make_organization_id_nullable_in_users.py
+│   │   │   ├── 83015671028d_add_missing_fields_like_organization_id_.py
+│   │   │   ├── 8e4983d3b1e9_baseline.py
+│   │   │   ├── ee85c65317e3_add_is_super_admin_to_users.py
 │   ├── structure/
 │   ├── tests/
+│   │   ├── test_api_organization_scoping.py
 │   │   ├── test_companies.py
+│   │   ├── test_complete_migration_workflow.py
 │   │   ├── test_database_reset.py
 │   │   ├── test_excel_features.py
+│   │   ├── test_license_management.py
 │   │   ├── test_multitenant.py
 │   │   ├── test_organization_license.py
 │   │   ├── test_password_management.py
+│   │   ├── test_pincode_lookup.py
+│   │   ├── test_product_name_consistency.py
+│   │   ├── test_product_name_standardization.py
+│   │   ├── test_settings_module_visibility.py
 │   │   ├── test_stock.py
+│   │   ├── test_supabase_migration.py
+│   │   ├── test_superadmin_reset.py
+│   │   ├── test_super_admin_seeding.py
+│   │   ├── test_vendor_customer_save.py
+│   │   ├── test_voucher_add_select.py
 │   │   ├── __init__.py

@@ -1,3 +1,5 @@
+# Revised: app/api/organizations.py
+
 """
 Organization management API endpoints
 """
@@ -15,6 +17,9 @@ from app.schemas.base import (
 )
 from app.api.auth import get_current_user, get_current_active_user
 import logging
+import secrets
+import string
+import re
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -34,10 +39,6 @@ async def create_organization_license(
         )
     
     try:
-        import secrets
-        import string
-        import re
-        
         # Generate subdomain from organization name
         subdomain_base = re.sub(r'[^a-zA-Z0-9]', '', license_data.organization_name.lower())
         subdomain_base = subdomain_base[:15] if len(subdomain_base) > 15 else subdomain_base

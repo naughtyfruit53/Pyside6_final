@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "TRITIQ ERP API"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = "FastAPI migration of PySide6 ERP application"
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/api"
     
     # Security
     SECRET_KEY: str = "your-secret-key-here-change-in-production"

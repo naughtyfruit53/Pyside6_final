@@ -1,4 +1,4 @@
-// fastapi_migration/frontend/src/pages/admin/organizations/[id].tsx
+// Revised: frontend/src/pages/admin/organizations/[id].tsx
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -16,7 +16,12 @@ import {
   Alert,
   Chip,
   Paper,
-  Divider
+  Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Snackbar
 } from '@mui/material';
 import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -59,6 +64,9 @@ const OrganizationDetailPage: React.FC = () => {
   const [editedOrg, setEditedOrg] = useState<Organization | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openResetDialog, setOpenResetDialog] = useState(false);
+  const [resetPassword, setResetPassword] = useState<string | null>(null);
+  const [resetSnackbarOpen, setResetSnackbarOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -69,14 +77,24 @@ const OrganizationDetailPage: React.FC = () => {
   const fetchOrganization = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v1/organizations/${id}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/organizations/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch organization');
+        if (response.status === 401) {
+          // Handle unauthorized - perhaps redirect to login
+          router.push('/login');
+          return;
+        }
+        if (response.status === 404) {
+          setError('Organization not found');
+          return;
+        }
+        throw new Error(`Failed to fetch organization: ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -84,8 +102,8 @@ const OrganizationDetailPage: React.FC = () => {
       setEditedOrg(data);
       setError(null);
     } catch (error) {
-      setError('Failed to load organization details');
       console.error('Error fetching organization:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load organization details');
     } finally {
       setLoading(false);
     }
@@ -104,11 +122,12 @@ const OrganizationDetailPage: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await fetch(`/api/v1/organizations/${id}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/organizations/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(editedOrg),
       });
@@ -135,6 +154,33 @@ const OrganizationDetailPage: React.FC = () => {
         ...editedOrg,
         [field]: value,
       });
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/auth/password/reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ user_email: organization?.primary_email }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset password');
+      }
+
+      const data = await response.json();
+      setResetPassword(data.new_password);
+      setOpenResetDialog(false);
+      setResetSnackbarOpen(true);
+      toast.success('Password reset successfully');
+    } catch (error) {
+      toast.error('Failed to reset password');
+      console.error('Error resetting password:', error);
     }
   };
 
@@ -182,14 +228,24 @@ const OrganizationDetailPage: React.FC = () => {
         </Typography>
         <Box>
           {!editing ? (
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
-              sx={{ mr: 1 }}
-            >
-              Edit
-            </Button>
+            <>
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={handleEdit}
+                sx={{ mr: 1 }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => setOpenResetDialog(true)}
+                sx={{ mr: 1 }}
+              >
+                Reset Password
+              </Button>
+            </>
           ) : (
             <>
               <Button
@@ -458,6 +514,45 @@ const OrganizationDetailPage: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Reset Password Confirmation Dialog */}
+      <Dialog
+        open={openResetDialog}
+        onClose={() => setOpenResetDialog(false)}
+      >
+        <DialogTitle>Reset Password</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to reset the password for this organization's admin?
+            The new password will be emailed and also shown here for manual sharing.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenResetDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleResetPassword} color="secondary">
+            Reset
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Password Display Snackbar */}
+      <Snackbar
+        open={resetSnackbarOpen}
+        autoHideDuration={null}
+        onClose={() => setResetSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        action={
+          <Button color="secondary" size="small" onClick={() => setResetSnackbarOpen(false)}>
+            Close
+          </Button>
+        }
+      >
+        <Alert severity="info" onClose={() => setResetSnackbarOpen(false)}>
+          New Password: {resetPassword} (Copy this for manual sharing)
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

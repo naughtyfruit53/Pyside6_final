@@ -1,10 +1,9 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Enable Turbopack for development (experimental)
-  experimental: {
-    turbo: true,
+  // Use Turbopack (now stable) for development
+  turbopack: {
+    // Add Turbopack-specific options here if needed
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',

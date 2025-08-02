@@ -1,3 +1,5 @@
+# Revised: app/services/email_service.py
+
 import smtplib
 import random
 import string
@@ -34,12 +36,8 @@ class EmailService:
         
     def _validate_email_config(self) -> tuple[bool, str]:
         """Validate email configuration"""
-        if not self.smtp_username or not self.smtp_password:
-            return False, "SMTP credentials are not configured"
-        
-        if not self.from_email:
-            return False, "From email is not configured"
-            
+        if not all([self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_password, self.from_email]):
+            return False, "SMTP configuration is incomplete"
         return True, "Email configuration is valid"
     
     def _send_email(self, to_email: str, subject: str, body: str, html_body: Optional[str] = None) -> tuple[bool, Optional[str]]:
