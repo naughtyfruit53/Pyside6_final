@@ -21,6 +21,11 @@ fastapi_migration/
 │   │   │   ├── __init__.py
 │   │   │   ├── routes/
 │   │   │   │   ├── admin.py
+│   │   │   ├── v1/
+│   │   │   │   ├── admin.py
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── reset.py
+│   │   │   │   ├── __init__.py
 │   │   │   ├── vouchers/
 │   │   │   │   ├── accounting.py
 │   │   │   │   ├── email.py
@@ -31,9 +36,11 @@ fastapi_migration/
 │   │   │   │   ├── __init__.py
 │   │   ├── core/
 │   │   │   ├── .deps.py
+│   │   │   ├── audit.py
 │   │   │   ├── config.py
 │   │   │   ├── database.py
 │   │   │   ├── logging.py
+│   │   │   ├── permissions.py
 │   │   │   ├── security.py
 │   │   │   ├── seed_super_admin.py
 │   │   │   ├── tenant.py
@@ -48,7 +55,9 @@ fastapi_migration/
 │   │   ├── schemas/
 │   │   │   ├── base.py
 │   │   │   ├── company.py
+│   │   │   ├── reset.py
 │   │   │   ├── stock.py
+│   │   │   ├── user.py
 │   │   │   ├── vouchers.py
 │   │   │   ├── __init__.py
 │   │   ├── services/
@@ -57,6 +66,7 @@ fastapi_migration/
 │   │   │   ├── otp_service.py
 │   │   │   ├── reset_service.py
 │   │   │   ├── security_services.py
+│   │   │   ├── user_service.py
 │   │   │   ├── voucher_service.py
 │   │   │   ├── __init__.py
 │   │   ├── static/
@@ -91,17 +101,18 @@ fastapi_migration/
 │   │   │   ├── types/
 │   │   │   ├── utils/
 │   │   │   │   ├── apiUtils.py
-│   ├── logs/
 │   ├── migrations/
 │   │   ├── env.py
 │   │   ├── versions/
 │   │   │   ├── 42429b6c6684_make_organization_id_nullable_in_users.py
 │   │   │   ├── 83015671028d_add_missing_fields_like_organization_id_.py
 │   │   │   ├── 8e4983d3b1e9_baseline.py
+│   │   │   ├── a1b2c3d4e5f6_add_temp_password_fields.py
 │   │   │   ├── ee85c65317e3_add_is_super_admin_to_users.py
 │   ├── structure/
 │   ├── tests/
 │   │   ├── test_api_organization_scoping.py
+│   │   ├── test_auth.py
 │   │   ├── test_companies.py
 │   │   ├── test_complete_migration_workflow.py
 │   │   ├── test_database_reset.py
@@ -118,6 +129,7 @@ fastapi_migration/
 │   │   ├── test_supabase_migration.py
 │   │   ├── test_superadmin_reset.py
 │   │   ├── test_super_admin_seeding.py
+│   │   ├── test_temporary_master_password.py
 │   │   ├── test_vendor_customer_save.py
 │   │   ├── test_voucher_add_select.py
 │   │   ├── __init__.py

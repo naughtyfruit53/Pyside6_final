@@ -1,11 +1,10 @@
 // frontend/src/services/authService.ts (Revised for detailed error handling in companyService)
-
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1`,
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,18 +32,12 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/';
     }
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.message || 
-                        error.message || 
-                        'An unexpected error occurred';
-                        
+    const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'An unexpected error occurred';
     console.error('API Error:', errorMessage);
-    
-    return Promise.reject({ 
-      ...error, 
+    return Promise.reject({
+      ...error,
       userMessage: errorMessage,
-      status: error.response?.status 
+      status: error.response?.status
     });
   }
 );
@@ -55,7 +48,6 @@ export const authService = {
       const formData = new FormData();
       formData.append('username', username);
       formData.append('password', password);
-      
       const response = await api.post('/auth/login', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -66,7 +58,6 @@ export const authService = {
       throw new Error(error.userMessage || 'Login failed');
     }
   },
-
   loginWithEmail: async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login/email', { email, password });
@@ -75,7 +66,6 @@ export const authService = {
       throw new Error(error.userMessage || 'Email login failed');
     }
   },
-
   getCurrentUser: async () => {
     try {
       const response = await api.get('/users/me');
@@ -84,12 +74,10 @@ export const authService = {
       throw new Error(error.userMessage || 'Failed to get user information');
     }
   },
-
   logout: () => {
     localStorage.removeItem('token');
     window.location.href = '/';
   },
-
   // OTP Authentication
   requestOTP: async (email: string, purpose: string = 'login') => {
     try {
@@ -99,7 +87,6 @@ export const authService = {
       throw new Error(error.userMessage || 'Failed to send OTP');
     }
   },
-
   verifyOTP: async (email: string, otp: string, purpose: string = 'login') => {
     try {
       const response = await api.post('/auth/otp/verify', { email, otp, purpose });
@@ -108,7 +95,6 @@ export const authService = {
       throw new Error(error.userMessage || 'OTP verification failed');
     }
   },
-
   setupAdminAccount: async () => {
     try {
       const response = await api.post('/auth/admin/setup');
@@ -129,7 +115,6 @@ export const voucherService = {
       throw new Error(error.userMessage || `Failed to fetch ${type}`);
     }
   },
-
   createVoucher: async (type: string, data: any, sendEmail = false) => {
     try {
       const response = await api.post(`/vouchers/${type}?send_email=${sendEmail}`, data);
@@ -138,7 +123,6 @@ export const voucherService = {
       throw new Error(error.userMessage || `Failed to create ${type}`);
     }
   },
-
   getVoucherById: async (type: string, id: number) => {
     try {
       const response = await api.get(`/vouchers/${type}/${id}`);
@@ -147,7 +131,6 @@ export const voucherService = {
       throw new Error(error.userMessage || `Failed to fetch ${type}`);
     }
   },
-
   updateVoucher: async (type: string, id: number, data: any) => {
     try {
       const response = await api.put(`/vouchers/${type}/${id}`, data);
@@ -156,7 +139,6 @@ export const voucherService = {
       throw new Error(error.userMessage || `Failed to update ${type}`);
     }
   },
-
   deleteVoucher: async (type: string, id: number) => {
     try {
       const response = await api.delete(`/vouchers/${type}/${id}`);
@@ -165,7 +147,6 @@ export const voucherService = {
       throw new Error(error.userMessage || `Failed to delete ${type}`);
     }
   },
-
   sendVoucherEmail: async (voucherType: string, voucherId: number, customEmail?: string) => {
     const params = customEmail ? `?custom_email=${customEmail}` : '';
     try {
@@ -175,54 +156,42 @@ export const voucherService = {
       throw new Error(error.userMessage || 'Failed to send email');
     }
   },
-
   getSalesVouchers: async (params?: any) => {
     return voucherService.getVouchers('sales', params);
   },
-
   // Purchase Order specific methods
   getPurchaseOrders: async (params?: any) => {
     return voucherService.getVouchers('purchase_order', params);
   },
-
   getPurchaseOrderById: async (id: number) => {
     return voucherService.getVoucherById('purchase_order', id);
   },
-
   createPurchaseOrder: async (data: any, sendEmail = false) => {
     return voucherService.createVoucher('purchase_order', data, sendEmail);
   },
-
   updatePurchaseOrder: async (id: number, data: any) => {
     return voucherService.updateVoucher('purchase_order', id, data);
   },
-
   // GRN specific methods
   getGrns: async (params?: any) => {
     return voucherService.getVouchers('grn', params);
   },
-
   getGrnById: async (id: number) => {
     return voucherService.getVoucherById('grn', id);
   },
-
   createGrn: async (data: any, sendEmail = false) => {
     return voucherService.createVoucher('grn', data, sendEmail);
   },
-
   updateGrn: async (id: number, data: any) => {
     return voucherService.updateVoucher('grn', id, data);
   },
-
   // Access to master data for vouchers
   getVendors: async (params?: any) => {
     return masterDataService.getVendors(params);
   },
-
   getProducts: async (params?: any) => {
     return masterDataService.getProducts(params);
   },
-
   getCustomers: async (params?: any) => {
     return masterDataService.getCustomers(params);
   },
@@ -237,7 +206,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to fetch vendors');
     }
   },
-
   createVendor: async (data: any) => {
     try {
       const response = await api.post('/vendors/', data);
@@ -246,7 +214,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to create vendor');
     }
   },
-
   updateVendor: async (id: number, data: any) => {
     try {
       const response = await api.put(`/vendors/${id}`, data);
@@ -255,7 +222,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to update vendor');
     }
   },
-
   deleteVendor: async (id: number) => {
     try {
       const response = await api.delete('/vendors/' + id);
@@ -264,7 +230,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to delete vendor');
     }
   },
-
   getCustomers: async (params?: any) => {
     try {
       const response = await api.get('/customers/', { params });
@@ -273,7 +238,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to fetch customers');
     }
   },
-
   createCustomer: async (data: any) => {
     try {
       const response = await api.post('/customers/', data);
@@ -282,7 +246,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to create customer');
     }
   },
-
   updateCustomer: async (id: number, data: any) => {
     try {
       const response = await api.put(`/customers/${id}`, data);
@@ -291,7 +254,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to update customer');
     }
   },
-
   deleteCustomer: async (id: number) => {
     try {
       const response = await api.delete('/customers/' + id);
@@ -300,7 +262,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to delete customer');
     }
   },
-
   getProducts: async (params?: any) => {
     try {
       const response = await api.get('/products/', { params });
@@ -309,7 +270,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to fetch products');
     }
   },
-
   createProduct: async (data: any) => {
     try {
       const response = await api.post('/products/', data);
@@ -318,7 +278,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to create product');
     }
   },
-
   updateProduct: async (id: number, data: any) => {
     try {
       const response = await api.put(`/products/${id}`, data);
@@ -327,7 +286,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to update product');
     }
   },
-
   deleteProduct: async (id: number) => {
     try {
       const response = await api.delete('/products/' + id);
@@ -336,7 +294,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to delete product');
     }
   },
-
   getStock: async (params?: any) => {
     try {
       const response = await api.get('/stock/', { params });
@@ -345,7 +302,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to fetch stock data');
     }
   },
-
   getLowStock: async () => {
     try {
       const response = await api.get('/stock/low-stock');
@@ -354,7 +310,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to fetch low stock data');
     }
   },
-
   updateStock: async (productId: number, data: any) => {
     try {
       const response = await api.put(`/stock/product/${productId}`, data);
@@ -363,7 +318,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to update stock');
     }
   },
-
   adjustStock: async (productId: number, quantityChange: number, reason: string) => {
     try {
       const response = await api.post(`/stock/adjust/${productId}`, null, {
@@ -374,7 +328,6 @@ export const masterDataService = {
       throw new Error(error.userMessage || 'Failed to adjust stock');
     }
   },
-
   bulkImportStock: async (file: File) => {
     try {
       const formData = new FormData();
@@ -404,7 +357,6 @@ export const companyService = {
       throw new Error(error.userMessage || 'Failed to get current company');
     }
   },
-
   createCompany: async (data: any) => {
     try {
       const response = await api.post('/companies/', data);
@@ -413,7 +365,6 @@ export const companyService = {
       throw new Error(error.userMessage || 'Failed to create company');
     }
   },
-
   updateCompany: async (id: number, data: any) => {
     try {
       const response = await api.put(`/companies/${id}`, data);
@@ -433,7 +384,6 @@ export const reportsService = {
       throw new Error(error.userMessage || 'Failed to get dashboard stats');
     }
   },
-
   getSalesReport: async (params?: any) => {
     try {
       const response = await api.get('/reports/sales-report', { params });
@@ -442,7 +392,6 @@ export const reportsService = {
       throw new Error(error.userMessage || 'Failed to get sales report');
     }
   },
-
   getPurchaseReport: async (params?: any) => {
     try {
       const response = await api.get('/reports/purchase-report', { params });
@@ -451,22 +400,20 @@ export const reportsService = {
       throw new Error(error.userMessage || 'Failed to get purchase report');
     }
   },
-
   getInventoryReport: async (lowStockOnly = false) => {
     try {
-      const response = await api.get('/reports/inventory-report', { 
-        params: { low_stock_only: lowStockOnly } 
+      const response = await api.get('/reports/inventory-report', {
+        params: { low_stock_only: lowStockOnly }
       });
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to get inventory report');
     }
   },
-
   getPendingOrders: async (orderType = 'all') => {
     try {
-      const response = await api.get('/reports/pending-orders', { 
-        params: { order_type: orderType } 
+      const response = await api.get('/reports/pending-orders', {
+        params: { order_type: orderType }
       });
       return response.data;
     } catch (error: any) {
@@ -484,7 +431,6 @@ export const organizationService = {
       throw new Error(error.userMessage || 'Failed to create organization license');
     }
   },
-
   getCurrentOrganization: async () => {
     try {
       const response = await api.get('/organizations/current');
@@ -493,7 +439,6 @@ export const organizationService = {
       throw new Error(error.userMessage || 'Failed to get current organization');
     }
   },
-
   updateOrganization: async (data: any) => {
     try {
       const response = await api.put('/organizations/current', data);
@@ -502,7 +447,6 @@ export const organizationService = {
       throw new Error(error.userMessage || 'Failed to update organization');
     }
   },
-
   // Admin-only endpoints
   getAllOrganizations: async (params?: any) => {
     try {
@@ -512,7 +456,6 @@ export const organizationService = {
       throw new Error(error.userMessage || 'Failed to get organizations');
     }
   },
-
   getOrganization: async (id: number) => {
     try {
       const response = await api.get(`/organizations/${id}`);
@@ -521,7 +464,6 @@ export const organizationService = {
       throw new Error(error.userMessage || 'Failed to get organization');
     }
   },
-
   updateOrganizationById: async (id: number, data: any) => {
     try {
       const response = await api.put(`/organizations/${id}`, data);
@@ -544,7 +486,6 @@ export const passwordService = {
       throw new Error(error.userMessage || 'Failed to change password');
     }
   },
-
   forgotPassword: async (email: string) => {
     try {
       const response = await api.post('/auth/password/forgot', { email });
@@ -553,7 +494,6 @@ export const passwordService = {
       throw new Error(error.userMessage || 'Failed to send password reset email');
     }
   },
-
   resetPassword: async (email: string, otp: string, newPassword: string) => {
     try {
       const response = await api.post('/auth/password/reset', {
