@@ -24,9 +24,9 @@ class Settings(BaseSettings):
     # Email Settings (Required for OTP)
     SMTP_HOST: str = "smtp.gmail.com"  # Changed back to SMTP_HOST to match .env
     SMTP_PORT: int = 587
-    SMTP_USERNAME: str  # Required: Your Gmail or SMTP user email
-    SMTP_PASSWORD: str  # Required: Your Gmail app password or SMTP password
-    EMAILS_FROM_EMAIL: str  # Required: Sender email (same as SMTP_USERNAME)
+    SMTP_USERNAME: Optional[str] = None  # Gmail or SMTP user email
+    SMTP_PASSWORD: Optional[str] = None  # Gmail app password or SMTP password  
+    EMAILS_FROM_EMAIL: Optional[str] = None  # Sender email (same as SMTP_USERNAME)
     EMAILS_FROM_NAME: str = "TRITIQ ERP"
     
     # SendGrid (Alternative email service)

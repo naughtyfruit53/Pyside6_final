@@ -300,7 +300,7 @@ async def update_sales_voucher(
         if voucher_update.items is not None:
             from app.models.vouchers import SalesVoucherItem
             db.query(SalesVoucherItem).filter(
-                SalesVoucherItem.sales_voucher_id = = voucher_id
+                SalesVoucherItem.sales_voucher_id == voucher_id
             ).delete()
             
             for item_data in voucher_update.items:

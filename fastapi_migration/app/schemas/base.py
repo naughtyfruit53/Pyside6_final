@@ -136,15 +136,15 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 class PasswordResetRequest(BaseModel):
-    email: EmailStr
-    otp: str
-    new_password: str
+    user_email: EmailStr
     
-    @validator('new_password')
-    def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
-        return v
+class PasswordResetResponse(BaseModel):
+    message: str
+    user_email: str
+    new_password: str  # Displayed to super admin
+    email_sent: bool
+    email_error: Optional[str] = None
+    must_change_password: bool = True
 
 class PasswordChangeResponse(BaseModel):
     message: str
