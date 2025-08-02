@@ -14,6 +14,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+print("🚀 Starting TRITIQ ERP API application...")
+print("📋 Router configuration:")
+print("  ✅ Enhanced v1 API routes: /api/v1/auth/* (primary authentication)")
+print("  ✅ Platform management: /api/v1/platform/*")
+print("  ✅ Organization management: /api/v1/organizations/*")
+print("  ✅ Business modules: /api/v1/users, /api/v1/companies, /api/v1/vendors, etc.")
+
 # Create FastAPI app
 app = FastAPI(
     title=config_settings.PROJECT_NAME,
@@ -37,13 +44,44 @@ app.add_middleware(TenantMiddleware)
 # Import v1 enhanced routers
 from app.api.v1 import auth as v1_auth, admin as v1_admin, reset as v1_reset
 
+# ===============================================================================
+# ENHANCED V1 API ROUTER CONFIGURATION 
+# ===============================================================================
+# The following routers provide enhanced functionality with comprehensive
+# authentication, authorization, audit logging, and multi-tenancy support:
+#
+# Primary authentication endpoints:
+#   - /api/v1/auth/login (OAuth2 password form)
+#   - /api/v1/auth/login/email (enhanced email login)
+#   - /api/v1/auth/master-password/login (emergency access)
+#   - /api/v1/auth/otp/* (OTP-based authentication)
+#   - /api/v1/auth/password/* (password management)
+#
+# Administrative and system endpoints:
+#   - /api/v1/admin/* (user and organization management)
+#   - /api/v1/reset/* (data reset and emergency access)
+# ===============================================================================
+
 # Include enhanced v1 API routers
 app.include_router(v1_auth.router, prefix=f"{config_settings.API_V1_STR}/auth", tags=["authentication-v1"])
 app.include_router(v1_admin.router, prefix=f"{config_settings.API_V1_STR}/admin", tags=["admin-v1"])
 app.include_router(v1_reset.router, prefix=f"{config_settings.API_V1_STR}/reset", tags=["reset-v1"])
 
-# Include existing API routers for backward compatibility
-app.include_router(auth.router, prefix="/api/auth", tags=["authentication-legacy"])
+# ===============================================================================
+# LEGACY API ROUTERS (FOR BACKWARD COMPATIBILITY)
+# ===============================================================================
+# The following routers provide legacy functionality maintained for backward compatibility.
+# Note: Legacy auth router is DISABLED to prevent conflicts with enhanced v1 auth.
+# Business module routers continue to provide core functionality.
+# ===============================================================================
+
+# LEGACY AUTH ROUTER - COMMENTED OUT TO PREVENT CONFLICTS WITH V1 ENHANCED AUTH
+# The legacy auth router at /api/auth/* has been disabled to ensure only the enhanced
+# v1 authentication endpoints (/api/v1/auth/*) are active. This prevents route conflicts
+# and ensures all authentication flows use the enhanced security features.
+# app.include_router(auth.router, prefix="/api/auth", tags=["authentication-legacy"])
+
+# Include existing API routers for backward compatibility (excluding legacy auth)
 app.include_router(platform.router, prefix=f"{config_settings.API_V1_STR}/platform", tags=["platform"])
 app.include_router(organizations.router, prefix=f"{config_settings.API_V1_STR}/organizations", tags=["organizations"])
 app.include_router(users.router, prefix=f"{config_settings.API_V1_STR}/users", tags=["users"])
