@@ -21,6 +21,8 @@ import secrets
 import string
 import re
 
+from app.services.email_service import email_service  # Import for sending email
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -111,13 +113,16 @@ async def create_organization_license(
         db.commit()
         db.refresh(org)
         
-        # TODO: Send confirmation email with login details
-        # email_service.send_organization_license_created_email(
-        #     license_data.superadmin_email,
-        #     license_data.organization_name,
-        #     subdomain,
-        #     temp_password
-        # )
+        # Send confirmation email with login details
+        success, error = email_service.send_password_reset_email(
+            license_data.superadmin_email,
+            "Administrator",
+            temp_password,
+            current_user.full_name or current_user.email,
+            license_data.organization_name
+        )
+        if not success:
+            logger.warning(f"Failed to send organization creation email: {error}")
         
         logger.info(f"Created organization license {org.name} with admin {admin_user.email}")
         

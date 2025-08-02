@@ -233,12 +233,15 @@ class UserService:
         email_sent = False
         email_error = None
         try:
-            if email_service.send_password_reset_notification(
+            success, error = email_service.send_password_reset_email(
                 target_email, 
+                target_user.full_name or target_user.username,
                 new_password, 
-                admin_user.full_name or admin_user.email
-            ):
-                email_sent = True
+                admin_user.full_name or admin_user.email,
+                organization_name=None  # Add if needed
+            )
+            email_sent = success
+            email_error = error
         except Exception as e:
             email_error = str(e)
             logger.warning(f"Failed to send password reset email: {e}")
@@ -300,20 +303,26 @@ class UserService:
                 
                 # Try to send email
                 email_sent = False
+                email_error = None
                 try:
-                    if email_service.send_password_reset_notification(
+                    success, error = email_service.send_password_reset_email(
                         user.email, 
+                        user.full_name or user.username,
                         new_password, 
-                        admin_user.full_name or admin_user.email
-                    ):
-                        email_sent = True
+                        admin_user.full_name or admin_user.email,
+                        organization_name=None  # Add if needed
+                    )
+                    email_sent = success
+                    email_error = error
                 except Exception as e:
+                    email_error = str(e)
                     logger.warning(f"Failed to send password reset email to {user.email}: {e}")
                 
                 reset_results.append({
                     "email": user.email,
                     "new_password": new_password,
-                    "email_sent": email_sent
+                    "email_sent": email_sent,
+                    "email_error": email_error
                 })
                 
             except Exception as e:
@@ -377,21 +386,27 @@ class UserService:
                 
                 # Try to send email
                 email_sent = False
+                email_error = None
                 try:
-                    if email_service.send_password_reset_notification(
+                    success, error = email_service.send_password_reset_email(
                         user.email, 
+                        user.full_name or user.username,
                         new_password, 
-                        admin_user.full_name or admin_user.email
-                    ):
-                        email_sent = True
+                        admin_user.full_name or admin_user.email,
+                        organization_name=None  # Add if needed
+                    )
+                    email_sent = success
+                    email_error = error
                 except Exception as e:
+                    email_error = str(e)
                     logger.warning(f"Failed to send password reset email to {user.email}: {e}")
                 
                 reset_results.append({
                     "email": user.email,
                     "organization_id": user.organization_id,
                     "new_password": new_password,
-                    "email_sent": email_sent
+                    "email_sent": email_sent,
+                    "email_error": email_error
                 })
                 
             except Exception as e:

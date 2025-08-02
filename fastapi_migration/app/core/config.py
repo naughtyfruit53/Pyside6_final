@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     
     # SendGrid (Alternative email service)
     SENDGRID_API_KEY: Optional[str] = None
+
+    # Brevo (Default email service)
+    BREVO_API_KEY: Optional[str] = None
     
     # Redis (for caching and task queue)
     REDIS_URL: str = "redis://localhost:6379"

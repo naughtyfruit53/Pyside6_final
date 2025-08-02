@@ -1,12 +1,9 @@
-# Revised: app/services/email_service.py
+# Revised: app/services/email_service.py (Using Brevo API)
 
-import smtplib
 import random
 import string
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
@@ -19,6 +16,10 @@ from app.models.base import User, OTPVerification
 from app.models.vouchers import PurchaseVoucher, SalesVoucher, PurchaseOrder, SalesOrder
 import logging
 
+# Brevo (Sendinblue) import
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
+
 # Assuming engine is defined in database.py; adjust if needed
 from app.core.database import engine
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -27,22 +28,24 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self):
-        self.smtp_server = getattr(settings, 'SMTP_HOST', 'smtp.gmail.com')
-        self.smtp_port = getattr(settings, 'SMTP_PORT', 587)
-        self.smtp_username = getattr(settings, 'SMTP_USERNAME', '')
-        self.smtp_password = getattr(settings, 'SMTP_PASSWORD', '')
-        self.from_email = getattr(settings, 'EMAILS_FROM_EMAIL', self.smtp_username)
+        self.brevo_api_key = getattr(settings, 'BREVO_API_KEY', None)
+        self.from_email = getattr(settings, 'EMAILS_FROM_EMAIL', 'naughtyfruit53@gmail.com')
         self.from_name = getattr(settings, 'EMAILS_FROM_NAME', 'TRITIQ ERP')
+        
+        if self.brevo_api_key:
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = self.brevo_api_key
+            self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
         
     def _validate_email_config(self) -> tuple[bool, str]:
         """Validate email configuration"""
-        if not all([self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_password, self.from_email]):
-            return False, "SMTP configuration is incomplete"
+        if not self.brevo_api_key:
+            return False, "Brevo API key is missing"
         return True, "Email configuration is valid"
     
     def _send_email(self, to_email: str, subject: str, body: str, html_body: Optional[str] = None) -> tuple[bool, Optional[str]]:
         """
-        Internal method to send an email via SMTP with enhanced error handling.
+        Internal method to send an email via Brevo with enhanced error handling.
         Returns tuple of (success: bool, error_message: Optional[str])
         """
         try:
@@ -53,45 +56,22 @@ class EmailService:
                 log_email_operation("send", to_email, False, error_msg)
                 return False, error_msg
             
-            # Create message
-            msg = MIMEMultipart('alternative')
-            msg['From'] = f"{self.from_name} <{self.from_email}>"
-            msg['To'] = to_email
-            msg['Subject'] = subject
-            
-            # Add plain text part
-            text_part = MIMEText(body, 'plain', 'utf-8')
-            msg.attach(text_part)
-            
-            # Add HTML part if provided
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": to_email}],
+                sender={"name": self.from_name, "email": self.from_email},
+                subject=subject,
+                text_content=body
+            )
             if html_body:
-                html_part = MIMEText(html_body, 'html', 'utf-8')
-                msg.attach(html_part)
+                send_smtp_email.html_content = html_body
             
-            # Connect and send
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.smtp_username, self.smtp_password)
-                server.sendmail(self.from_email, to_email, msg.as_string())
-            
+            self.api_instance.send_transac_email(send_smtp_email)
             logger.info(f"Email sent successfully to {to_email}")
             log_email_operation("send", to_email, True)
             return True, None
             
-        except smtplib.SMTPAuthenticationError as e:
-            error_msg = f"SMTP authentication failed: {str(e)}"
-            logger.error(error_msg)
-            log_email_operation("send", to_email, False, error_msg)
-            return False, error_msg
-            
-        except smtplib.SMTPRecipientsRefused as e:
-            error_msg = f"Recipient email rejected: {str(e)}"
-            logger.error(error_msg)
-            log_email_operation("send", to_email, False, error_msg)
-            return False, error_msg
-            
-        except smtplib.SMTPServerDisconnected as e:
-            error_msg = f"SMTP server disconnected: {str(e)}"
+        except ApiException as e:
+            error_msg = f"Brevo API error: {str(e)}"
             logger.error(error_msg)
             log_email_operation("send", to_email, False, error_msg)
             return False, error_msg
@@ -133,7 +113,6 @@ class EmailService:
     
     def _html_to_plain(self, html_content: str, **kwargs) -> str:
         """Convert HTML to plain text (simplified version)"""
-        # This is a simplified conversion - in production, consider using html2text
         import re
         
         # Remove HTML tags
