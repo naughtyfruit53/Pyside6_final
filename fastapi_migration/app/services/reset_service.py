@@ -6,10 +6,9 @@ from sqlalchemy import and_
 from typing import List, Dict, Any, Optional
 from app.models.base import (
     Organization, User, Company, Product, Customer, Vendor, 
-    Stock, EmailNotification, PaymentTerm, OTPVerification
+    Stock, EmailNotification, PaymentTerm, OTPVerification, PlatformUser
 )
-from app.models.user import PlatformUser
-from app.core.audit import AuditLog, AuditLogger
+from app.core.audit import AuditLogger
 from app.schemas.reset import (
     DataResetRequest, DataResetResponse, OrganizationDataResetResponse,
     DataResetType, ResetScope

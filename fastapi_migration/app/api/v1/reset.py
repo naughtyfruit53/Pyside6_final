@@ -465,7 +465,7 @@ async def get_reset_audit_logs(
             )
         
         # Build query
-        from app.core.audit import AuditLog
+        from app.models.base import AuditLog
         query = db.query(AuditLog)
         
         # Filter by organization if specified

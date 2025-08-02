@@ -15,7 +15,6 @@ from app.core.tenant import TenantContext, TenantQueryFilter, get_organization_f
 from app.core.audit import AuditLogger, get_client_ip, get_user_agent
 from app.core.permissions import PermissionChecker, Permission
 from app.models.base import User, Organization, PlatformUser
-from app.models.user import User as UserModel, PlatformUser as PlatformUserModel
 from app.schemas.user import (
     Token, UserLogin, UserInDB, UserRole, OTPRequest, OTPVerifyRequest, OTPResponse, 
     PasswordChangeRequest, ForgotPasswordRequest, PasswordResetRequest, PasswordChangeResponse,

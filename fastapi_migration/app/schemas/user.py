@@ -192,6 +192,26 @@ class BulkPasswordResetResponse(BaseModel):
     total_users_reset: int
     organizations_affected: list
     failed_resets: list = []
+
+
+# Temporary password schemas
+class TemporaryPasswordRequest(BaseModel):
+    target_email: EmailStr
+    expires_hours: int = 24
+    
+    @validator('expires_hours')
+    def validate_expires_hours(cls, v):
+        if v < 1 or v > 168:  # Max 1 week
+            raise ValueError('expires_hours must be between 1 and 168 (1 week)')
+        return v
+
+
+class TemporaryPasswordResponse(BaseModel):
+    message: str
+    target_email: str
+    temporary_password: str
+    expires_at: str
+    force_password_reset: bool = True
     
 
 # OTP schemas
@@ -217,8 +237,10 @@ class MasterPasswordLoginRequest(BaseModel):
     master_password: str
 
 
-class MasterPasswordResponse(BaseModel):
+class MasterPasswordLoginResponse(BaseModel):
     message: str
-    requires_password_reset: bool = True
     access_token: str
     token_type: str = "bearer"
+    force_password_reset: bool = True
+    organization_id: Optional[int] = None
+    user_role: str
