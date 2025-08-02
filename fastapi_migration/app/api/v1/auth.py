@@ -2,6 +2,7 @@
 Enhanced authentication and authorization endpoints (API v1)
 Comprehensive authentication with master password support, audit logging, and robust user lookup
 """
+print("🔄 Loading enhanced v1 authentication module...")
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -301,6 +302,7 @@ async def login_with_email(
     db: Session = Depends(get_db)
 ):
     """Enhanced email login with comprehensive authentication"""
+    print(f"🔑 Enhanced v1 /login/email endpoint called for email: {user_credentials.email}")
     try:
         # Get organization context
         organization = None
