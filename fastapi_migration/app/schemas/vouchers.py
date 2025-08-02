@@ -185,6 +185,14 @@ class PurchaseOrderInDB(VoucherInDBBase):
     terms_conditions: Optional[str]
     items: List[PurchaseOrderItemInDB]
 
+class PurchaseOrderAutoPopulateResponse(BaseModel):
+    vendor_id: int
+    purchase_order_id: int
+    delivery_date: Optional[datetime] = None
+    payment_terms: Optional[str] = None
+    terms_conditions: Optional[str] = None
+    items: List[PurchaseVoucherItemCreate]
+
 # Sales Order
 class SalesOrderItemCreate(SimpleVoucherItem):
     pass
@@ -218,6 +226,15 @@ class SalesOrderInDB(VoucherInDBBase):
     payment_terms: Optional[str]
     terms_conditions: Optional[str]
     items: List[SalesOrderItemInDB]
+
+class SalesOrderAutoPopulateResponse(BaseModel):
+    customer_id: int
+    sales_order_id: int
+    delivery_date: Optional[datetime] = None
+    payment_terms: Optional[str] = None
+    terms_conditions: Optional[str] = None
+    place_of_supply: Optional[str] = None
+    items: List[SalesVoucherItemCreate]
 
 # GRN
 class GRNItemCreate(BaseModel):
@@ -272,6 +289,16 @@ class GRNInDB(VoucherInDBBase):
     lr_rr_number: Optional[str]
     items: List[GRNItemInDB]
 
+class GRNAutoPopulateResponse(BaseModel):
+    vendor_id: int
+    purchase_order_id: int
+    invoice_number: Optional[str] = None
+    invoice_date: Optional[datetime] = None
+    transport_mode: Optional[str] = None
+    vehicle_number: Optional[str] = None
+    lr_rr_number: Optional[str] = None
+    items: List[PurchaseVoucherItemCreate]
+
 # Delivery Challan
 class DeliveryChallanItemCreate(SimpleVoucherItem):
     pass
@@ -312,6 +339,16 @@ class DeliveryChallanInDB(VoucherInDBBase):
     lr_rr_number: Optional[str]
     destination: Optional[str]
     items: List[DeliveryChallanItemInDB]
+
+class DeliveryChallanAutoPopulateResponse(BaseModel):
+    customer_id: int
+    sales_order_id: int
+    delivery_date: Optional[datetime] = None
+    transport_mode: Optional[str] = None
+    vehicle_number: Optional[str] = None
+    lr_rr_number: Optional[str] = None
+    destination: Optional[str] = None
+    items: List[SalesVoucherItemCreate]
 
 # Proforma Invoice
 class ProformaInvoiceItemCreate(VoucherItemWithTax):

@@ -64,28 +64,33 @@ async def get_current_user(
             is_active=platform_user.is_active,
             created_at=platform_user.created_at,
             updated_at=platform_user.updated_at,
-            last_login=platform_user.last_login
+            last_login=platform_user.last_login,
+            hashed_password=platform_user.hashed_password  # Added to support password changes
         )
         
-        # Set platform user flag
+        # Set platform user flag and super admin status
         user.is_platform_user = True
+        user.is_super_admin = (platform_user.role == "super_admin")
         
     else:
-        # Organization user
+        # Organization user (including super admins stored as User with organization_id=None)
         if organization_id:
             user = db.query(User).filter(
                 User.email == email,
                 User.organization_id == organization_id
             ).first()
         else:
-            # Should not happen for organization users
-            raise credentials_exception
+            # Handle super admin case (organization_id=None)
+            user = db.query(User).filter(
+                User.email == email,
+                User.organization_id.is_(None)
+            ).first()
         
         if user is None:
             raise credentials_exception
         
-        user.is_platform_user = False
-    
+        user.is_platform_user = user.is_super_admin  # Treat super admins as platform users for permissions
+     
     # Set user context
     TenantContext.set_user_id(user.id)
     

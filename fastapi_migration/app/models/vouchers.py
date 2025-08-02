@@ -478,3 +478,51 @@ class SalesReturnItem(VoucherItemBase):
     
     sales_return_id = Column(Integer, ForeignKey("sales_returns.id"), nullable=False)
     sales_return = relationship("SalesReturn", back_populates="items")
+
+# Contra Voucher
+class ContraVoucher(BaseVoucher):
+    __tablename__ = "contra_vouchers"
+    
+    from_account = Column(String, nullable=False)
+    to_account = Column(String, nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'voucher_number', name='uq_contra_org_voucher_number'),
+        Index('idx_contra_org_from_account', 'organization_id', 'from_account'),
+        Index('idx_contra_org_to_account', 'organization_id', 'to_account'),
+        Index('idx_contra_org_date', 'organization_id', 'date'),
+    )
+
+# Journal Voucher
+class JournalVoucher(BaseVoucher):
+    __tablename__ = "journal_vouchers"
+    
+    entries = Column(Text, nullable=False)  # JSON string for entries
+    
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'voucher_number', name='uq_journal_org_voucher_number'),
+        Index('idx_journal_org_date', 'organization_id', 'date'),
+    )
+
+# Inter Department Voucher
+class InterDepartmentVoucher(BaseVoucher):
+    __tablename__ = "inter_department_vouchers"
+    
+    from_department = Column(String, nullable=False)
+    to_department = Column(String, nullable=False)
+    
+    items = relationship("InterDepartmentVoucherItem", back_populates="inter_department_voucher", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'voucher_number', name='uq_idv_org_voucher_number'),
+        Index('idx_idv_org_from_dept', 'organization_id', 'from_department'),
+        Index('idx_idv_org_to_dept', 'organization_id', 'to_department'),
+        Index('idx_idv_org_date', 'organization_id', 'date'),
+    )
+
+class InterDepartmentVoucherItem(SimpleVoucherItemBase):
+    __tablename__ = "inter_department_voucher_items"
+    
+    inter_department_voucher_id = Column(Integer, ForeignKey("inter_department_vouchers.id"), nullable=False)
+    
+    inter_department_voucher = relationship("InterDepartmentVoucher", back_populates="items")

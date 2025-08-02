@@ -98,7 +98,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Multi-tenant fields - REQUIRED for all organization users
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
     
     # User credentials
     email = Column(String, nullable=False, index=True)
@@ -114,6 +114,7 @@ class User(Base):
     
     # Permissions and status
     is_active = Column(Boolean, default=True)
+    is_super_admin = Column(Boolean, default=False)
     must_change_password = Column(Boolean, default=False)
     
     # Profile
