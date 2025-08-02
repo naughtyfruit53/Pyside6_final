@@ -19,6 +19,15 @@ class PlatformUser(Base):
     role = Column(String, nullable=False, default="super_admin")  # super_admin, platform_admin
     is_active = Column(Boolean, default=True)
     
+    # Temporary master password support
+    temp_password_hash = Column(String, nullable=True)  # Temporary password hash
+    temp_password_expires = Column(DateTime(timezone=True), nullable=True)  # Expiry for temp password
+    force_password_reset = Column(Boolean, default=False)  # Force password reset on next login
+    
+    # Security
+    failed_login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime(timezone=True))
+    
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -116,6 +125,11 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_super_admin = Column(Boolean, default=False)
     must_change_password = Column(Boolean, default=False)
+    
+    # Temporary master password support
+    temp_password_hash = Column(String, nullable=True)  # Temporary password hash
+    temp_password_expires = Column(DateTime(timezone=True), nullable=True)  # Expiry for temp password
+    force_password_reset = Column(Boolean, default=False)  # Force password reset on next login
     
     # Profile
     phone = Column(String)

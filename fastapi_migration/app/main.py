@@ -34,12 +34,20 @@ app.add_middleware(
 # Add tenant middleware for multi-tenancy
 app.add_middleware(TenantMiddleware)
 
-# Include API routers
-app.include_router(auth.router, prefix=f"{config_settings.API_V1_STR}/auth", tags=["authentication"])
+# Import v1 enhanced routers
+from app.api.v1 import auth as v1_auth, admin as v1_admin, reset as v1_reset
+
+# Include enhanced v1 API routers
+app.include_router(v1_auth.router, prefix=f"{config_settings.API_V1_STR}/auth", tags=["authentication-v1"])
+app.include_router(v1_admin.router, prefix=f"{config_settings.API_V1_STR}/admin", tags=["admin-v1"])
+app.include_router(v1_reset.router, prefix=f"{config_settings.API_V1_STR}/reset", tags=["reset-v1"])
+
+# Include existing API routers for backward compatibility
+app.include_router(auth.router, prefix="/api/auth", tags=["authentication-legacy"])
 app.include_router(platform.router, prefix=f"{config_settings.API_V1_STR}/platform", tags=["platform"])
 app.include_router(organizations.router, prefix=f"{config_settings.API_V1_STR}/organizations", tags=["organizations"])
 app.include_router(users.router, prefix=f"{config_settings.API_V1_STR}/users", tags=["users"])
-app.include_router(admin.router, prefix=f"{config_settings.API_V1_STR}/admin", tags=["admin"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin-legacy"])
 app.include_router(companies.router, prefix=f"{config_settings.API_V1_STR}/companies", tags=["companies"])
 app.include_router(vendors.router, prefix=f"{config_settings.API_V1_STR}/vendors", tags=["vendors"])
 app.include_router(customers.router, prefix=f"{config_settings.API_V1_STR}/customers", tags=["customers"])
