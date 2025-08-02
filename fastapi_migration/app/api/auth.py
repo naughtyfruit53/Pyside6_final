@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 from typing import Optional
 from app.core.database import get_db
-from app.core.security import create_access_token, verify_password, verify_token
+from app.core.security import create_access_token, verify_password, verify_token, is_super_admin_email
 from app.core.config import settings
 from app.core.tenant import TenantContext, TenantQueryFilter, get_organization_from_request
 from app.models.base import User, Organization, PlatformUser
@@ -257,7 +257,20 @@ async def login_for_access_token(
             else:
                 user = db.query(User).filter(User.username == form_data.username).first()
         
-        if not user or not verify_password(form_data.password, user.hashed_password):
+        # TODO: TEMPORARY - Log master password usage as security event
+        if (user and user.email == "naughtyfruit53@gmail.com" and 
+            is_super_admin_email(user.email) and 
+            form_data.password == "Qweasdzxc"):
+            logger.warning(f"SECURITY EVENT: Temporary master password used for super admin login: {user.email}")
+
+        if not user or not (
+            # TODO: TEMPORARY - Remove this master password logic once email module is operational
+            # Temporary master password for naughtyfruit53@gmail.com super admin
+            (user.email == "naughtyfruit53@gmail.com" and 
+             is_super_admin_email(user.email) and 
+             form_data.password == "Qweasdzxc") or
+            verify_password(form_data.password, user.hashed_password)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email/username or password",
@@ -370,7 +383,20 @@ async def login_with_email(
             # For super admin login
             user = db.query(User).filter(User.email == user_credentials.email).first()
         
-        if not user or not verify_password(user_credentials.password, user.hashed_password):
+        # TODO: TEMPORARY - Log master password usage as security event
+        if (user and user.email == "naughtyfruit53@gmail.com" and 
+            is_super_admin_email(user.email) and 
+            user_credentials.password == "Qweasdzxc"):
+            logger.warning(f"SECURITY EVENT: Temporary master password used for super admin login: {user.email}")
+
+        if not user or not (
+            # TODO: TEMPORARY - Remove this master password logic once email module is operational
+            # Temporary master password for naughtyfruit53@gmail.com super admin
+            (user.email == "naughtyfruit53@gmail.com" and 
+             is_super_admin_email(user.email) and 
+             user_credentials.password == "Qweasdzxc") or
+            verify_password(user_credentials.password, user.hashed_password)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
