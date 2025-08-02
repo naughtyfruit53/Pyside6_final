@@ -29,13 +29,21 @@ logger = logging.getLogger(__name__)
 class EmailService:
     def __init__(self):
         self.brevo_api_key = getattr(settings, 'BREVO_API_KEY', None)
-        self.from_email = getattr(settings, 'EMAILS_FROM_EMAIL', 'naughtyfruit53@gmail.com')
-        self.from_name = getattr(settings, 'EMAILS_FROM_NAME', 'TRITIQ ERP')
+        self.from_email = getattr(settings, 'BREVO_FROM_EMAIL', None) or getattr(settings, 'EMAILS_FROM_EMAIL', 'naughtyfruit53@gmail.com')
+        self.from_name = getattr(settings, 'BREVO_FROM_NAME', 'TRITIQ ERP')
         
         if self.brevo_api_key:
-            configuration = sib_api_v3_sdk.Configuration()
-            configuration.api_key['api-key'] = self.brevo_api_key
-            self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+            try:
+                configuration = sib_api_v3_sdk.Configuration()
+                configuration.api_key['api-key'] = self.brevo_api_key
+                self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+                logger.info("Brevo email service initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Brevo API client: {e}")
+                self.api_instance = None
+        else:
+            logger.warning("Brevo API key not configured - email functionality will be limited")
+            self.api_instance = None
         
     def _validate_email_config(self) -> tuple[bool, str]:
         """Validate email configuration"""

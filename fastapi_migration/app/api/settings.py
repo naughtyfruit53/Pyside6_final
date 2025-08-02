@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, List
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_super_admin
+from app.api.auth import get_current_active_user, get_current_admin_user, get_current_super_admin
 from app.models.base import User, Organization
 from app.services.reset_service import ResetService
 from app.core.tenant import require_current_organization_id
+from app.schemas.reset import DataResetRequest, ResetScope
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,11 +14,12 @@ router = APIRouter()
 
 @router.post("/reset/organization")
 async def reset_organization_data(
+    reset_request: DataResetRequest = None,
     confirm: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_super_admin)
+    current_user: User = Depends(get_current_admin_user)
 ):
-    """Reset all data for the current organization (Super Admin only)"""
+    """Reset all data for the current organization (Org Admin+ only)"""
     
     if not confirm:
         raise HTTPException(
@@ -26,19 +28,60 @@ async def reset_organization_data(
         )
     
     try:
-        org_id = require_current_organization_id()
+        # For org admins, use their organization ID
+        # For super admins, they can reset any organization specified in request
+        if hasattr(current_user, 'is_super_admin') and current_user.is_super_admin:
+            # Super admin can reset any organization
+            if reset_request and reset_request.organization_id:
+                org_id = reset_request.organization_id
+            else:
+                # If no org specified and super admin, require it
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Super admin must specify organization_id in request body"
+                )
+        else:
+            # Org admin can only reset their own organization
+            if not current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User must belong to an organization to reset data"
+                )
+            org_id = current_user.organization_id
+        
+        # Verify organization exists
+        organization = db.query(Organization).filter(Organization.id == org_id).first()
+        if not organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Organization {org_id} not found"
+            )
         
         # Use reset service to perform the reset
-        result = ResetService.reset_organization_data(db, org_id)
+        if not reset_request:
+            reset_request = DataResetRequest(
+                scope=ResetScope.ORGANIZATION,
+                organization_id=org_id
+            )
+        
+        result = ResetService.reset_organization_data(
+            db, 
+            org_id, 
+            current_user, 
+            reset_request
+        )
         
         logger.info(f"Organization {org_id} data reset by user {current_user.id}")
         
         return {
             "message": "Organization data reset successfully",
             "organization_id": org_id,
+            "organization_name": organization.name,
             "reset_details": result
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to reset organization data: {str(e)}")
         raise HTTPException(
@@ -233,4 +276,88 @@ async def update_max_users(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update max users: {str(e)}"
+        )
+
+@router.post("/reset/all-organizations")
+async def reset_all_organizations(
+    confirm: bool = False,
+    force: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Reset data for ALL organizations (Super Admin only) - DANGEROUS OPERATION"""
+    
+    if not confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Confirmation required. Set confirm=true to proceed."
+        )
+    
+    if not force:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This operation will delete ALL organization data. Set force=true if you are absolutely sure."
+        )
+    
+    try:
+        # Get all organizations
+        organizations = db.query(Organization).all()
+        
+        if not organizations:
+            return {
+                "message": "No organizations found to reset",
+                "total_organizations": 0,
+                "reset_results": []
+            }
+        
+        reset_results = []
+        failed_resets = []
+        
+        for org in organizations:
+            try:
+                reset_request = DataResetRequest(
+                    scope=ResetScope.ORGANIZATION,
+                    organization_id=org.id
+                )
+                
+                result = ResetService.reset_organization_data(
+                    db, 
+                    org.id, 
+                    current_user, 
+                    reset_request
+                )
+                
+                reset_results.append({
+                    "organization_id": org.id,
+                    "organization_name": org.name,
+                    "status": "success",
+                    "reset_details": result
+                })
+                
+            except Exception as e:
+                logger.error(f"Failed to reset organization {org.id}: {e}")
+                failed_resets.append({
+                    "organization_id": org.id,
+                    "organization_name": org.name,
+                    "error": str(e)
+                })
+        
+        logger.warning(f"ALL ORGANIZATIONS data reset by super admin {current_user.id}")
+        
+        return {
+            "message": f"Reset completed for {len(reset_results)} organizations",
+            "total_organizations": len(organizations),
+            "successful_resets": len(reset_results),
+            "failed_resets": len(failed_resets),
+            "reset_results": reset_results,
+            "failures": failed_resets
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to reset all organizations: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset all organizations: {str(e)}"
         )

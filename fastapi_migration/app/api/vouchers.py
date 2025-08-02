@@ -2,8 +2,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import List
-from app.core.database import get_db
+from app.core.database import get_db, DatabaseTransaction
 from app.api.auth import get_current_active_user
 from app.models.base import User
 from app.models.vouchers import (
@@ -46,13 +47,26 @@ async def get_purchase_vouchers(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get all purchase vouchers"""
-    query = db.query(PurchaseVoucher)
-    
-    if status:
-        query = query.filter(PurchaseVoucher.status == status)
-    
-    vouchers = query.offset(skip).limit(limit).all()
-    return vouchers
+    try:
+        query = db.query(PurchaseVoucher)
+        
+        if status:
+            query = query.filter(PurchaseVoucher.status == status)
+        
+        vouchers = query.offset(skip).limit(limit).all()
+        return vouchers
+    except SQLAlchemyError as e:
+        logger.error(f"Database error retrieving purchase vouchers: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve purchase vouchers due to database error"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error retrieving purchase vouchers: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving purchase vouchers"
+        )
 
 @router.post("/purchase-vouchers/", response_model=PurchaseVoucherInDB)
 async def create_purchase_voucher(
@@ -64,28 +78,31 @@ async def create_purchase_voucher(
 ):
     """Create new purchase voucher"""
     try:
-        # Create the voucher
-        voucher_data = voucher.dict(exclude={'items'})
-        voucher_data['created_by'] = current_user.id
+        with DatabaseTransaction(db) as transaction_db:
+            # Create the voucher
+            voucher_data = voucher.dict(exclude={'items'})
+            voucher_data['created_by'] = current_user.id
+            
+            db_voucher = PurchaseVoucher(**voucher_data)
+            transaction_db.add(db_voucher)
+            transaction_db.flush()  # Get the voucher ID without committing
+            
+            # Add items
+            for item_data in voucher.items:
+                from app.models.vouchers import PurchaseVoucherItem
+                item = PurchaseVoucherItem(
+                    purchase_voucher_id=db_voucher.id,
+                    **item_data.dict()
+                )
+                transaction_db.add(item)
+            
+            # Refresh the voucher to get all related data
+            transaction_db.refresh(db_voucher)
         
-        db_voucher = PurchaseVoucher(**voucher_data)
-        db.add(db_voucher)
-        db.flush()  # Get the voucher ID
+        # Transaction is automatically committed if we reach here
         
-        # Add items
-        for item_data in voucher.items:
-            from app.models.vouchers import PurchaseVoucherItem
-            item = PurchaseVoucherItem(
-                purchase_voucher_id=db_voucher.id,
-                **item_data.dict()
-            )
-            db.add(item)
-        
-        db.commit()
-        db.refresh(db_voucher)
-        
-        # Send email if requested
-        if send_email and db_voucher.vendor and db_voucher.vendor.email:
+        # Send email if requested (outside transaction)
+        if send_email and db_voucher.vendor and hasattr(db_voucher.vendor, 'email') and db_voucher.vendor.email:
             background_tasks.add_task(
                 send_voucher_email,
                 voucher_type="purchase_voucher",
@@ -97,12 +114,23 @@ async def create_purchase_voucher(
         logger.info(f"Purchase voucher {voucher.voucher_number} created by {current_user.email}")
         return db_voucher
         
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating purchase voucher: {e}")
+    except IntegrityError as e:
+        logger.error(f"Integrity constraint violation creating purchase voucher: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid data provided. Please check for duplicate voucher numbers or missing required fields."
+        )
+    except SQLAlchemyError as e:
+        logger.error(f"Database error creating purchase voucher: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create purchase voucher"
+            detail="Failed to create purchase voucher due to database error"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error creating purchase voucher: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create purchase voucher due to an unexpected error"
         )
 
 @router.get("/purchase-vouchers/{voucher_id}", response_model=PurchaseVoucherInDB)
@@ -112,13 +140,29 @@ async def get_purchase_voucher(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get purchase voucher by ID"""
-    voucher = db.query(PurchaseVoucher).filter(PurchaseVoucher.id == voucher_id).first()
-    if not voucher:
+    try:
+        voucher = db.query(PurchaseVoucher).filter(PurchaseVoucher.id == voucher_id).first()
+        if not voucher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Purchase voucher with ID {voucher_id} not found"
+            )
+        return voucher
+    except HTTPException:
+        # Re-raise HTTP exceptions as they are
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error retrieving purchase voucher {voucher_id}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Purchase voucher not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve purchase voucher due to database error"
         )
-    return voucher
+    except Exception as e:
+        logger.error(f"Unexpected error retrieving purchase voucher {voucher_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving the purchase voucher"
+        )
 
 @router.put("/purchase-vouchers/{voucher_id}", response_model=PurchaseVoucherInDB)
 async def update_purchase_voucher(

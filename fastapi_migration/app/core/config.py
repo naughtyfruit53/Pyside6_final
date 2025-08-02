@@ -32,8 +32,10 @@ class Settings(BaseSettings):
     # SendGrid (Alternative email service)
     SENDGRID_API_KEY: Optional[str] = None
 
-    # Brevo (Default email service)
+    # Brevo (Sendinblue) Email Service - Primary
     BREVO_API_KEY: Optional[str] = None
+    BREVO_FROM_EMAIL: Optional[str] = None
+    BREVO_FROM_NAME: str = "TRITIQ ERP"
     
     # Redis (for caching and task queue)
     REDIS_URL: str = "redis://localhost:6379"
