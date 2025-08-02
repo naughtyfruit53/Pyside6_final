@@ -300,7 +300,7 @@ async def update_sales_voucher(
         if voucher_update.items is not None:
             from app.models.vouchers import SalesVoucherItem
             db.query(SalesVoucherItem).filter(
-                SalesVoucherItem.sales_voucher_id = = voucher_id
+                SalesVoucherItem.sales_voucher_id == voucher_id
             ).delete()
             
             for item_data in voucher_update.items:
@@ -1071,6 +1071,51 @@ async def delete_payment_voucher(
         raise HTTPException(status_code=500, detail="Failed to delete payment voucher")
 
 # Note: Repeat this pattern for all other voucher types as needed. To keep the response reasonable, the full expansion for all types is not shown here, but follow the same structure for each.
+
+# Simplified purchase and sales endpoints for specific API paths
+@router.get("/purchase", response_model=List[PurchaseVoucherInDB])
+async def get_purchase_vouchers_simple(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all purchase vouchers - simplified endpoint"""
+    return await get_purchase_vouchers(skip, limit, status, db, current_user)
+
+@router.post("/purchase", response_model=PurchaseVoucherInDB)
+async def create_purchase_voucher_simple(
+    voucher: PurchaseVoucherCreate,
+    background_tasks: BackgroundTasks,
+    send_email: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create new purchase voucher - simplified endpoint"""
+    return await create_purchase_voucher(voucher, background_tasks, send_email, db, current_user)
+
+@router.get("/sales", response_model=List[SalesVoucherInDB])
+async def get_sales_vouchers_simple(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all sales vouchers - simplified endpoint"""
+    return await get_sales_vouchers(skip, limit, status, db, current_user)
+
+@router.post("/sales", response_model=SalesVoucherInDB)
+async def create_sales_voucher_simple(
+    voucher: SalesVoucherCreate,
+    background_tasks: BackgroundTasks,
+    send_email: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create new sales voucher - simplified endpoint"""
+    return await create_sales_voucher(voucher, background_tasks, send_email, db, current_user)
 
 # Email endpoints
 @router.post("/send-email/{voucher_type}/{voucher_id}")
