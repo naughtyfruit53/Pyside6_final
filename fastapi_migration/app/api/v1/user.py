@@ -2,7 +2,7 @@
 User authentication dependencies and utilities
 """
 
-from fastapi import Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -10,7 +10,9 @@ from app.core.database import get_db
 from app.core.security import verify_token
 from app.core.tenant import TenantContext
 from app.models.base import User, Organization, PlatformUser
-from app.schemas.user import UserRole
+from app.schemas.user import UserRole, UserInDB
+
+router = APIRouter(prefix="/users")
 
 
 async def get_current_user(
@@ -205,3 +207,9 @@ def get_tenant_db_session(
     if current_user.organization_id:
         TenantContext.set_organization_id(current_user.organization_id)
     return db
+
+
+@router.get("/me", response_model=UserInDB)
+async def get_current_user_me(current_user: User = Depends(get_current_active_user)):
+    """Get current authenticated user"""
+    return current_user

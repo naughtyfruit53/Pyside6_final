@@ -182,6 +182,11 @@ async def list_users(
             detail="Failed to retrieve users"
         )
 
+@router.get("/users/me", response_model=UserInDB)
+async def get_current_user_me(current_user: User = Depends(get_current_active_user)):
+    """Get current authenticated user details"""
+    return current_user
+
 @router.put("/users/{user_id}", response_model=UserInDB)
 async def update_user(
     user_id: int,

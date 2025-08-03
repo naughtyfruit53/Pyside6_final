@@ -1,7 +1,7 @@
 """
 User schemas for authentication and user management
 """
-from pydantic import BaseModel, EmailStr, validator, Field
+from pydantic import BaseModel, EmailStr, field_validator, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -37,7 +37,7 @@ class UserCreate(UserBase):
     password: str
     organization_id: Optional[int] = None  # Optional for creation by super admin
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         is_strong, msg = check_password_strength(v)
         if not is_strong:
@@ -71,8 +71,7 @@ class UserInDB(UserBase):
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes = True)
 
 
 class UserLogin(BaseModel):
@@ -109,11 +108,11 @@ class PlatformUserBase(BaseModel):
 class PlatformUserCreate(PlatformUserBase):
     password: str
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         is_strong, msg = check_password_strength(v)
         if not is_strong:
-            raise ValueError(msg)
+            raise ValueValue(msg)
         return v
 
 
@@ -133,8 +132,7 @@ class PlatformUserInDB(PlatformUserBase):
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes = True)
 
 
 # Password management schemas
@@ -142,15 +140,14 @@ class PasswordChangeRequest(BaseModel):
     current_password: str = Field(..., alias="currentPassword")
     new_password: str = Field(..., alias="newPassword")
     
-    @validator('new_password')
+    @field_validator('new_password')
     def validate_password(cls, v):
         is_strong, msg = check_password_strength(v)
         if not is_strong:
             raise ValueError(msg)
         return v
     
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name = True)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -162,7 +159,7 @@ class PasswordResetRequest(BaseModel):
     otp: str
     new_password: str
     
-    @validator('new_password')
+    @field_validator('new_password')
     def validate_password(cls, v):
         is_strong, msg = check_password_strength(v)
         if not is_strong:
@@ -173,8 +170,7 @@ class PasswordResetRequest(BaseModel):
 class PasswordChangeResponse(BaseModel):
     message: str
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes = True)
 
 
 # Admin password reset schemas
@@ -207,7 +203,7 @@ class TemporaryPasswordRequest(BaseModel):
     target_email: EmailStr
     expires_hours: int = 24
     
-    @validator('expires_hours')
+    @field_validator('expires_hours')
     def validate_expires_hours(cls, v):
         if v < 1 or v > 168:  # Max 1 week
             raise ValueError('expires_hours must be between 1 and 168 (1 week)')

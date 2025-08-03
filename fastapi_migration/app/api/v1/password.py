@@ -2,7 +2,7 @@
 Password management endpoints for authentication
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -26,12 +26,13 @@ router = APIRouter()
 
 @router.post("/change", response_model=PasswordChangeResponse)
 async def change_password(
-    password_data: PasswordChangeRequest,
+    password_data: PasswordChangeRequest = Body(...),
     request: Request = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Change user password with audit logging"""
+    logger.info(f"Received password change request for user {current_user.email} with payload: {password_data.dict()}")
     try:
         # Verify current password
         if not verify_password(password_data.current_password, current_user.hashed_password):
@@ -94,7 +95,7 @@ async def change_password(
 
 @router.post("/forgot", response_model=OTPResponse)
 async def forgot_password(
-    forgot_data: ForgotPasswordRequest,
+    forgot_data: ForgotPasswordRequest = Body(...),
     request: Request = None,
     db: Session = Depends(get_db)
 ):
@@ -157,7 +158,7 @@ async def forgot_password(
 
 @router.post("/reset", response_model=PasswordChangeResponse)
 async def reset_password(
-    reset_data: PasswordResetRequest,
+    reset_data: PasswordResetRequest = Body(...),
     request: Request = None,
     db: Session = Depends(get_db)
 ):

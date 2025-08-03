@@ -22,9 +22,9 @@ interface PasswordChangeModalProps {
 }
 
 interface PasswordFormData {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
 }
 
 const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
@@ -46,7 +46,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
     getValues
   } = useForm<PasswordFormData>();
 
-  const newPassword = watch('newPassword');
+  const new_password = watch('new_password');
 
   const handleClose = () => {
     if (!isRequired || success) {
@@ -58,13 +58,13 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   };
 
   const onSubmit = async (data: PasswordFormData) => {
-    // Additional validation to prevent empty field submission
-    if (!data.currentPassword || !data.newPassword || !data.confirmPassword) {
+    console.log('Submitted form data:', data);  // Debug the data before sending
+    if (!data.current_password || !data.new_password || !data.confirm_password) {
       setError('All fields are required');
       return;
     }
 
-    if (data.newPassword !== data.confirmPassword) {
+    if (data.new_password !== data.confirm_password) {
       setError('New passwords do not match');
       return;
     }
@@ -73,7 +73,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
     setError(null);
 
     try {
-      await passwordService.changePassword(data.currentPassword, data.newPassword);
+      await passwordService.changePassword(data.current_password, data.new_password);
       setSuccess(true);
       if (onSuccess) {
         onSuccess();
@@ -155,11 +155,11 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 label="Current Password"
                 type="password"
                 margin="normal"
-                {...register('currentPassword', {
+                {...register('current_password', {
                   required: 'Current password is required'
                 })}
-                error={!!errors.currentPassword}
-                helperText={errors.currentPassword?.message}
+                error={!!errors.current_password}
+                helperText={errors.current_password?.message}
                 disabled={loading}
               />
 
@@ -168,7 +168,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 label="New Password"
                 type="password"
                 margin="normal"
-                {...register('newPassword', {
+                {...register('new_password', {
                   required: 'New password is required',
                   minLength: {
                     value: 8,
@@ -179,8 +179,8 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                     message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
                   }
                 })}
-                error={!!errors.newPassword}
-                helperText={errors.newPassword?.message}
+                error={!!errors.new_password}
+                helperText={errors.new_password?.message}
                 disabled={loading}
               />
 
@@ -189,16 +189,16 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 label="Confirm New Password"
                 type="password"
                 margin="normal"
-                {...register('confirmPassword', {
+                {...register('confirm_password', {
                   required: 'Please confirm your new password',
                   validate: (value) => {
-                    if (value !== newPassword) {
+                    if (value !== new_password) {
                       return 'Passwords do not match';
                     }
                   }
                 })}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword?.message}
+                error={!!errors.confirm_password}
+                helperText={errors.confirm_password?.message}
                 disabled={loading}
               />
 

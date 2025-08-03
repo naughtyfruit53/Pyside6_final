@@ -499,8 +499,8 @@ export const passwordService = {
   changePassword: async (currentPassword: string, newPassword: string) => {
     try {
       const response = await api.post('/auth/password/change', {
-        current_password: currentPassword,
-        new_password: newPassword
+        currentPassword,
+        newPassword
       });
       return response.data;
     } catch (error: any) {

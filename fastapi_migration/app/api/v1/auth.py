@@ -51,6 +51,7 @@ async def get_current_user_with_oauth(
     db: Session = Depends(get_db)
 ) -> User:
     """Get current user from JWT token with oauth2 scheme"""
+    logger.info(f"Validating token: {token[:10]}...")  # Debug token prefix
     from .user import get_current_user
     return await get_current_user(token, db)
 
