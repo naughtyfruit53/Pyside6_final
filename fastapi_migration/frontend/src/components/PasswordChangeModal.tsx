@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { passwordService } from '../services/authService';
+import { getFeatureFlag } from '../utils/config';
 
 interface PasswordChangeModalProps {
   open: boolean;
@@ -36,6 +37,9 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  
+  // Check if password change functionality is enabled
+  const passwordChangeEnabled = getFeatureFlag('passwordChange');
   
   const {
     register,
@@ -87,6 +91,9 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       // Enhanced error handling to extract backend detail and handle objects/arrays
       let errorMessage = 'Failed to change password';
       
+      // Log the full error for debugging
+      console.error('Password change error:', err);
+      
       // Try to extract from various error structures
       const detail = err.response?.data?.detail;
       const message = err.response?.data?.message;
@@ -104,6 +111,8 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         errorMessage = detail.error || detail.message || 'Invalid request format';
       } else if (typeof err.message === 'string' && err.message && !err.message.includes('[object Object]')) {
         errorMessage = err.message;
+      } else if (err.status === 422) {
+        errorMessage = 'Invalid request. Please check your input fields.';
       }
       
       setError(errorMessage);
@@ -131,6 +140,12 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             </Alert>
           )}
 
+          {!passwordChangeEnabled && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Password change functionality is temporarily disabled. Please contact your administrator.
+            </Alert>
+          )}
+
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -148,7 +163,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             </Alert>
           )}
 
-          {!success && (
+          {!success && passwordChangeEnabled && (
             <form onSubmit={handleSubmit(onSubmit)}>
               <TextField
                 fullWidth
@@ -223,7 +238,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             Continue
           </Button>
         )}
-        {!success && (
+        {!success && passwordChangeEnabled && (
           <Button
             onClick={handleSubmit(onSubmit)}
             variant="contained"
@@ -233,6 +248,15 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             Change Password
           </Button>
         )}
+        {!passwordChangeEnabled && (isRequired ? (
+          <Button onClick={handleClose} variant="contained">
+            Continue Without Changing Password
+          </Button>
+        ) : (
+          <Button onClick={handleClose}>
+            Close
+          </Button>
+        ))}
       </DialogActions>
     </Dialog>
   );
