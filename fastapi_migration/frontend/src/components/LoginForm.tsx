@@ -39,7 +39,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       // Call parent callback with token and response
       onLogin(response.access_token, response);
     } catch (error: any) {
-      setError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
+      // Better error handling to prevent flicker
+      const errorMessage = error.message || error.response?.data?.detail || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             error={!!errors.email}
             helperText={errors.email?.message as string}
             margin="normal"
-            autoFocus
           />
 
           <TextField
