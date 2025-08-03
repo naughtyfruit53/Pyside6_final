@@ -38,6 +38,7 @@ api.interceptors.response.use(
     
     const detail = error.response?.data?.detail;
     const message = error.response?.data?.message;
+    const status = error.response?.status;
     
     if (typeof detail === 'string' && detail) {
       errorMessage = detail;
@@ -50,11 +51,17 @@ api.interceptors.response.use(
     } else if (detail && typeof detail === 'object') {
       // Handle object error details
       errorMessage = detail.error || detail.message || JSON.stringify(detail);
-    } else if (error.message) {
+    } else if (typeof error.message === 'string' && error.message && !error.message.includes('[object Object]')) {
       errorMessage = error.message;
+    } else if (status === 422) {
+      errorMessage = 'Invalid request data. Please check your input and try again.';
+    } else if (status === 404) {
+      errorMessage = 'Service not found. Please check your connection.';
+    } else if (status >= 500) {
+      errorMessage = 'Server error. Please try again later or contact support.';
     }
     
-    console.error('API Error:', errorMessage);
+    console.error('API Error:', errorMessage, 'Status:', status);
     return Promise.reject({
       ...error,
       userMessage: errorMessage,
