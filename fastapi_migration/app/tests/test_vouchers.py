@@ -10,7 +10,7 @@ from app.core.database import get_db, Base
 from app.models.base import User, Organization, Vendor, Customer, Product
 from app.models.vouchers import PurchaseVoucher, SalesVoucher
 from app.core.security import get_password_hash
-from app.api.auth import get_current_active_user
+from app.api.v1.auth import get_current_active_user
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_vouchers.db"

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from app.core.database import get_db
-from app.api.auth import get_current_active_user
+from app.api.v1.auth import get_current_active_user
 from app.models.base import User, Product, Stock, Vendor, Customer
 from app.models.vouchers import (
     PurchaseVoucher, SalesVoucher, PurchaseOrder, SalesOrder,

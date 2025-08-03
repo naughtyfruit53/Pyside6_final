@@ -6,7 +6,7 @@ from app.main import app
 from app.core.database import get_db, Base
 from app.models.base import User, Organization
 from app.core.security import get_password_hash
-from app.api.auth import get_current_super_admin
+from app.api.v1.auth import get_current_super_admin
 from datetime import datetime
 
 # Test database

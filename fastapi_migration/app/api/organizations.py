@@ -15,7 +15,7 @@ from app.schemas.base import (
     OrganizationLicenseCreate, OrganizationLicenseResponse,
     UserCreate, UserInDB, UserRole
 )
-from app.api.auth import get_current_user, get_current_active_user
+from app.api.v1.auth import get_current_user, get_current_active_user
 import logging
 import secrets
 import string

@@ -6,7 +6,7 @@ import string
 from datetime import datetime
 
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_super_admin
+from app.api.v1.auth import get_current_active_user, get_current_super_admin
 from app.models.base import User
 from app.schemas.base import UserCreate, UserUpdate, UserInDB, PasswordResetRequest, PasswordResetResponse
 from app.core.security import get_password_hash

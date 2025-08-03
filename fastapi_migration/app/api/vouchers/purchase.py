@@ -4,7 +4,7 @@ from sqlalchemy import desc
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, require_current_organization_id
+from app.api.v1.auth import get_current_active_user, require_current_organization_id
 from app.core.tenant import TenantQueryFilter
 from app.models.base import User, Vendor, Product
 from app.models.vouchers import (
@@ -24,6 +24,28 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Purchase Vouchers by Type Endpoint (required by problem statement)
+@router.get("/purchase", response_model=List[PurchaseVoucherInDB])
+async def get_purchase_vouchers_by_type(
+    skip: int = 0,
+    limit: int = 100,
+    status: Optional[str] = None,
+    vendor_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get purchase vouchers filtered by type (problem statement requirement)"""
+    org_id = require_current_organization_id(current_user)
+    query = TenantQueryFilter.apply_organization_filter(db.query(PurchaseVoucher), PurchaseVoucher, org_id, current_user)
+    query = query.filter(PurchaseVoucher.voucher_type == "purchase")
+    
+    if status:
+        query = query.filter(PurchaseVoucher.status == status)
+    if vendor_id:
+        query = query.filter(PurchaseVoucher.vendor_id == vendor_id)
+    
+    return query.order_by(desc(PurchaseVoucher.date)).offset(skip).limit(limit).all()
 
 # --- Purchase Orders ---
 
