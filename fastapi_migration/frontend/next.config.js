@@ -7,13 +7,14 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_ENABLE_PASSWORD_CHANGE: process.env.NEXT_PUBLIC_ENABLE_PASSWORD_CHANGE || 'true',
   },
   allowedDevOrigins: ['127.0.0.1', 'localhost'],  // Add this to fix the cross-origin warning
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
       },
     ]
   },

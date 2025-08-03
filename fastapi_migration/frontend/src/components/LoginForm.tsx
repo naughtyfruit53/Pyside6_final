@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Box,
   Card,
@@ -20,9 +20,17 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const emailInputRef = useRef<HTMLInputElement>(null);
   
   const { register, handleSubmit, formState: { errors } } = useForm();
   const router = useRouter();
+
+  // Auto-focus email field on component mount
+  useEffect(() => {
+    if (emailInputRef.current) {
+      emailInputRef.current.focus();
+    }
+  }, []);
 
   const onSubmit = async (data: any) => {
     setLoading(true);
@@ -72,9 +80,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 message: 'Invalid email address'
               }
             })}
+            inputRef={emailInputRef}
             error={!!errors.email}
             helperText={errors.email?.message as string}
             margin="normal"
+            autoFocus
+            autoComplete="email"
           />
 
           <TextField
@@ -87,6 +98,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             error={!!errors.password}
             helperText={errors.password?.message as string}
             margin="normal"
+            autoComplete="current-password"
           />
 
           <Button
