@@ -7,12 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
-from typing import Optional
 
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password
 from app.core.config import settings
-from app.core.tenant import TenantContext, get_organization_from_request
+from app.core.tenant import get_organization_from_request
 from app.core.audit import AuditLogger, get_client_ip, get_user_agent
 from app.models.base import User
 from app.schemas.user import Token, UserLogin

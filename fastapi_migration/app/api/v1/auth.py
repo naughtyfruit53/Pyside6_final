@@ -3,10 +3,9 @@ Main authentication router that combines all authentication modules
 """
 print("🔄 Loading enhanced v1 authentication module...")
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from app.core.database import get_db
 from app.core.config import settings
