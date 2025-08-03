@@ -58,6 +58,17 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   };
 
   const onSubmit = async (data: PasswordFormData) => {
+    // Additional validation to prevent empty field submission
+    if (!data.currentPassword || !data.newPassword || !data.confirmPassword) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (data.newPassword !== data.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -164,8 +175,8 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                     message: 'Password must be at least 8 characters long'
                   },
                   pattern: {
-                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-                    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&].+$/,
+                    message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
                   }
                 })}
                 error={!!errors.newPassword}
@@ -194,7 +205,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
                   Password must be at least 8 characters long and contain at least one uppercase letter, 
-                  one lowercase letter, and one number.
+                  one lowercase letter, one number, and one special character (@$!%*?&).
                 </Typography>
               </Box>
             </form>
