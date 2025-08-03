@@ -1,12 +1,11 @@
 fastapi_migration/
-│   ├── .migrate_super_admin.py
+│   ├── demo_clean_migration_workflow.py
 │   ├── generate_structure.py
+│   ├── validate_clean_migration.py
 │   ├── app/
 │   │   ├── main.py
 │   │   ├── __init__.py
 │   │   ├── api/
-│   │   │   ├── .vouchers.py
-│   │   │   ├── auth.py
 │   │   │   ├── companies.py
 │   │   │   ├── customers.py
 │   │   │   ├── organizations.py
@@ -24,11 +23,14 @@ fastapi_migration/
 │   │   │   ├── v1/
 │   │   │   │   ├── admin.py
 │   │   │   │   ├── auth.py
+│   │   │   │   ├── password.py
 │   │   │   │   ├── reset.py
+│   │   │   │   ├── user.py
 │   │   │   │   ├── __init__.py
 │   │   │   ├── vouchers/
 │   │   │   │   ├── accounting.py
 │   │   │   │   ├── email.py
+│   │   │   │   ├── index.py
 │   │   │   │   ├── notes.py
 │   │   │   │   ├── purchase.py
 │   │   │   │   ├── quotes.py
@@ -101,14 +103,11 @@ fastapi_migration/
 │   │   │   ├── types/
 │   │   │   ├── utils/
 │   │   │   │   ├── apiUtils.py
+│   ├── logs/
 │   ├── migrations/
 │   │   ├── env.py
 │   │   ├── versions/
-│   │   │   ├── 42429b6c6684_make_organization_id_nullable_in_users.py
-│   │   │   ├── 83015671028d_add_missing_fields_like_organization_id_.py
-│   │   │   ├── 8e4983d3b1e9_baseline.py
-│   │   │   ├── a1b2c3d4e5f6_add_temp_password_fields.py
-│   │   │   ├── ee85c65317e3_add_is_super_admin_to_users.py
+│   │   │   ├── 269469f1c9c6_clean_initial_migration.py
 │   ├── structure/
 │   ├── tests/
 │   │   ├── test_api_organization_scoping.py

@@ -1,12 +1,14 @@
 // fastapi_migration/frontend/src/context/AuthContext.tsx
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authService } from '../services/authService';
 
 interface User {
   id: number;
   email: string;
   role: 'super_admin' | 'org_admin' | 'user';
   org_id?: number;
+  must_change_password?: boolean;
 }
 
 interface AuthContextType {
@@ -21,19 +23,29 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    // Simplified for build - will implement JWT decoding later
-    const token = localStorage.getItem('token');
-    if (token) {
-      setUser({
-        id: 1,
-        email: 'demo@example.com',
-        role: 'user',
-        org_id: 1,
-      });
-    }
-    setLoading(false);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const userData = await authService.getCurrentUser();
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            role: userData.role,
+            org_id: userData.organization_id,
+            must_change_password: userData.must_change_password,
+          });
+        } catch (error) {
+          localStorage.removeItem('token');
+          router.push('/login');
+        }
+      }
+      setLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const login = (token: string) => {

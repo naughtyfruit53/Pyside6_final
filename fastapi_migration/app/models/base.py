@@ -333,7 +333,7 @@ class AuditLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Multi-tenant field
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
     
     # Audit details
     table_name = Column(String, nullable=False)

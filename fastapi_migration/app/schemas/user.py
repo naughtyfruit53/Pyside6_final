@@ -1,10 +1,11 @@
 """
 User schemas for authentication and user management
 """
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
+from app.core.security import check_password_strength
 
 
 class UserRole(str, Enum):
@@ -38,8 +39,9 @@ class UserCreate(UserBase):
     
     @validator('password')
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+        is_strong, msg = check_password_strength(v)
+        if not is_strong:
+            raise ValueError(msg)
         return v
 
 
@@ -109,8 +111,9 @@ class PlatformUserCreate(PlatformUserBase):
     
     @validator('password')
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+        is_strong, msg = check_password_strength(v)
+        if not is_strong:
+            raise ValueError(msg)
         return v
 
 
@@ -136,14 +139,18 @@ class PlatformUserInDB(PlatformUserBase):
 
 # Password management schemas
 class PasswordChangeRequest(BaseModel):
-    current_password: str
-    new_password: str
+    current_password: str = Field(..., alias="currentPassword")
+    new_password: str = Field(..., alias="newPassword")
     
     @validator('new_password')
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+        is_strong, msg = check_password_strength(v)
+        if not is_strong:
+            raise ValueError(msg)
         return v
+    
+    class Config:
+        populate_by_name = True
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -157,8 +164,9 @@ class PasswordResetRequest(BaseModel):
     
     @validator('new_password')
     def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+        is_strong, msg = check_password_strength(v)
+        if not is_strong:
+            raise ValueError(msg)
         return v
 
 

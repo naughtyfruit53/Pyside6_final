@@ -73,7 +73,13 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         }, 2000);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to change password');
+      // Updated error handling to extract backend detail
+      setError(
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to change password'
+      );
     } finally {
       setLoading(false);
     }

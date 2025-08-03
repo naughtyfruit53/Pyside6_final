@@ -63,8 +63,12 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        handleMenuClose();
-        handleUserMenuClose();
+        if (anchorEl) {
+          handleMenuClose();
+        }
+        if (userMenuAnchor) {
+          handleUserMenuClose();
+        }
       }
     };
 
@@ -72,7 +76,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [anchorEl, userMenuAnchor]);
 
   // Don't render if not visible
   if (!isVisible) {
@@ -400,7 +404,6 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ user, onLogout, isVisible = true })
             )}
           </Box>
 
-          {/* User Menu */}
           <IconButton
             color="inherit"
             onClick={handleUserMenuClick}
