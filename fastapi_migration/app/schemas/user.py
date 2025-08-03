@@ -137,8 +137,8 @@ class PlatformUserInDB(PlatformUserBase):
 
 # Password management schemas
 class PasswordChangeRequest(BaseModel):
-    current_password: str = Field(..., alias="currentPassword")
-    new_password: str = Field(..., alias="newPassword")
+    current_password: str = Field(..., description="Current password for verification")
+    new_password: str = Field(..., description="New password to set")
     
     @field_validator('new_password')
     def validate_password(cls, v):
