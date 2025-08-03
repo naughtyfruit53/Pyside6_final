@@ -73,13 +73,29 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         }, 2000);
       }
     } catch (err: any) {
-      // Updated error handling to extract backend detail
-      setError(
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to change password'
-      );
+      // Enhanced error handling to extract backend detail and handle objects/arrays
+      let errorMessage = 'Failed to change password';
+      
+      // Try to extract from various error structures
+      const detail = err.response?.data?.detail;
+      const message = err.response?.data?.message;
+      
+      if (typeof detail === 'string' && detail) {
+        errorMessage = detail;
+      } else if (typeof message === 'string' && message) {
+        errorMessage = message;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Handle Pydantic validation errors
+        const messages = detail.map(e => e.msg || `${e.loc?.join(' -> ')}: ${e.type}`).filter(Boolean);
+        errorMessage = messages.length > 0 ? messages.join(', ') : 'Validation error';
+      } else if (detail && typeof detail === 'object') {
+        // Handle object error details
+        errorMessage = detail.error || detail.message || 'Invalid request format';
+      } else if (typeof err.message === 'string' && err.message && !err.message.includes('[object Object]')) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

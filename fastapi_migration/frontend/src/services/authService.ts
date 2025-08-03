@@ -32,7 +32,28 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/';
     }
-    const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'An unexpected error occurred';
+    
+    // Extract error message with proper handling for arrays and objects
+    let errorMessage = 'An unexpected error occurred';
+    
+    const detail = error.response?.data?.detail;
+    const message = error.response?.data?.message;
+    
+    if (typeof detail === 'string' && detail) {
+      errorMessage = detail;
+    } else if (typeof message === 'string' && message) {
+      errorMessage = message;
+    } else if (Array.isArray(detail) && detail.length > 0) {
+      // Handle Pydantic validation errors (array of objects)
+      const messages = detail.map(err => err.msg || `${err.loc?.join(' -> ')}: ${err.type}`).filter(Boolean);
+      errorMessage = messages.length > 0 ? messages.join(', ') : 'Validation error';
+    } else if (detail && typeof detail === 'object') {
+      // Handle object error details
+      errorMessage = detail.error || detail.message || JSON.stringify(detail);
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     console.error('API Error:', errorMessage);
     return Promise.reject({
       ...error,
