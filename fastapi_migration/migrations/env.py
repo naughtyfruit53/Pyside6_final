@@ -25,7 +25,8 @@ for (_, module_name, _) in pkgutil.iter_modules([models_dir]):
 config = context.config
 
 # Set the database URL for Alembic
-config.set_main_option('sqlalchemy.url', getattr(settings, "DATABASE_URL", ""))
+database_url = getattr(settings, "DATABASE_URL", None) or "sqlite:///./tritiq_erp.db"
+config.set_main_option('sqlalchemy.url', database_url)
 
 # Python logging configuration
 if config.config_file_name is not None:
