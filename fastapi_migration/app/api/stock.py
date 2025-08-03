@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
-from app.api.auth import get_current_active_user
+from app.api.v1.auth import get_current_active_user
 from app.core.tenant import TenantQueryMixin, require_current_organization_id
 from app.models.base import User, Stock, Product
 from app.schemas.stock import (

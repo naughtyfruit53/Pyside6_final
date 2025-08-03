@@ -148,6 +148,84 @@ async def get_current_super_admin(
     return await get_current_platform_user(current_user)
 
 
+def get_current_organization_id(current_user: User = Depends(get_current_active_user)) -> Optional[int]:
+    """Get current organization ID from context or user"""
+    org_id = TenantContext.get_organization_id()
+    if org_id is not None:
+        return org_id
+    
+    if current_user.organization_id:
+        TenantContext.set_organization_id(current_user.organization_id)
+        return current_user.organization_id
+    
+    if getattr(current_user, 'is_platform_user', False):
+        # For platform users, organization ID can be None
+        return None
+    
+    raise HTTPException(
+        status_code=400,
+        detail="No organization associated with user"
+    )
+
+
+def require_current_organization_id(current_user: User = Depends(get_current_active_user)) -> int:
+    """Get current organization ID, raise error if not set"""
+    org_id = get_current_organization_id(current_user)
+    
+    if org_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Organization context is required for this operation"
+        )
+    
+    return org_id
+
+
+def validate_organization_access(
+    organization_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Organization:
+    """Validate that current user has access to the specified organization"""
+    
+    # Platform users have access to all organizations
+    if getattr(current_user, 'is_platform_user', False):
+        org = db.query(Organization).filter(Organization.id == organization_id).first()
+        if not org:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Organization {organization_id} not found"
+            )
+        return org
+    
+    # Organization users can only access their own organization
+    if current_user.organization_id != organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied to organization {organization_id}"
+        )
+    
+    org = db.query(Organization).filter(Organization.id == organization_id).first()
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Organization {organization_id} not found"
+        )
+    
+    return org
+
+
+# Enhanced dependency for tenant-scoped database queries
+def get_tenant_db_session(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Session:
+    """Get database session with tenant context set"""
+    if current_user.organization_id:
+        TenantContext.set_organization_id(current_user.organization_id)
+    return db
+
+
 @router.post("/login", response_model=Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -912,4 +990,66 @@ async def reset_password(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during password reset"
+        )
+
+
+@router.post("/admin/setup")
+async def setup_admin_account(
+    request: Request = None,
+    db: Session = Depends(get_db)
+):
+    """Setup the initial app admin account (naughtyfruit53@gmail.com)"""
+    try:
+        admin_email = "naughtyfruit53@gmail.com"
+        
+        # Check if admin already exists
+        existing_admin = db.query(User).filter(User.email == admin_email).first()
+        if existing_admin:
+            return {"message": "Admin account already exists", "email": admin_email}
+        
+        # Create admin user
+        from app.core.security import get_password_hash
+        admin_user = User(
+            email=admin_email,
+            username="app_admin",
+            full_name="App Administrator",
+            hashed_password=get_password_hash("123456"),  # Default password
+            role=UserRole.SUPER_ADMIN,
+            is_super_admin=True,
+            is_active=True,
+            organization_id=None  # Super admin doesn't belong to any organization
+        )
+        
+        db.add(admin_user)
+        db.commit()
+        db.refresh(admin_user)
+        
+        # Log admin setup
+        AuditLogger.log_password_reset(
+            db=db,
+            admin_email="system",
+            target_email=admin_email,
+            target_user_id=admin_user.id,
+            organization_id=None,
+            success=True,
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            reset_type="ADMIN_SETUP",
+            details={"default_password_set": True}
+        )
+        
+        logger.info(f"Admin account created: {admin_email}")
+        return {
+            "message": "Admin account created successfully",
+            "email": admin_email,
+            "default_password": "123456",
+            "note": "Please change the default password after first login"
+        }
+        
+    except Exception as e:
+        logger.error(f"Admin setup error: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to setup admin account"
         )

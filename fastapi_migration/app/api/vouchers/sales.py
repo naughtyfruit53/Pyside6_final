@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
-from app.api.auth import get_current_active_user
+from app.api.v1.auth import get_current_active_user
 from app.models.base import User
 from app.models.vouchers import (
     SalesVoucher, SalesOrder, DeliveryChallan, SalesReturn
@@ -18,6 +18,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Sales Vouchers by Type Endpoint (required by problem statement)
+@router.get("/sales", response_model=List[SalesVoucherInDB])
+async def get_sales_vouchers_by_type(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get sales vouchers filtered by type (problem statement requirement)"""
+    query = db.query(SalesVoucher).filter(SalesVoucher.voucher_type == "sales")
+    
+    if status:
+        query = query.filter(SalesVoucher.status == status)
+    
+    vouchers = query.offset(skip).limit(limit).all()
+    return vouchers
 
 # Sales Vouchers
 @router.get("/sales-vouchers/", response_model=List[SalesVoucherInDB])

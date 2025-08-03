@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
-from app.api.auth import get_current_active_user
+from app.api.v1.auth import get_current_active_user
 from app.models.base import User
 from app.models.vouchers import (
     PaymentVoucher, ReceiptVoucher, ContraVoucher, JournalVoucher, InterDepartmentVoucher

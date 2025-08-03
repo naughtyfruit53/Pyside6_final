@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.api.auth import get_current_active_user, get_current_admin_user, get_current_super_admin, get_current_organization_id, require_current_organization_id  # Updated import
+from app.api.v1.auth import get_current_active_user, get_current_admin_user, get_current_super_admin, get_current_organization_id, require_current_organization_id  # Updated import
 from app.core.tenant import TenantQueryMixin  # Keep for TenantQueryMixin
 from app.models.base import User, Organization
 from app.schemas.base import UserCreate, UserUpdate, UserInDB, UserRole

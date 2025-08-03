@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.api.auth import (
+from app.api.v1.auth import (
     get_current_active_user, get_current_admin_user, 
     require_current_organization_id, validate_organization_access
 )
