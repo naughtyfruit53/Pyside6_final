@@ -32,15 +32,26 @@ async def change_password(
     db: Session = Depends(get_db)
 ):
     """Change user password with audit logging"""
-    logger.info(f"Received password change request for user {current_user.email} with payload: {password_data.dict()}")
+    logger.info(f"🔐 Password change request received for user {current_user.email}")
+    logger.info(f"📝 Request payload: new_password=*****, current_password={'PROVIDED' if password_data.current_password else 'NOT_PROVIDED'}, confirm_password={'PROVIDED' if password_data.confirm_password else 'NOT_PROVIDED'}")
+    logger.info(f"👤 User details: must_change_password={current_user.must_change_password}, role={current_user.role}")
+    
     try:
         # Handle mandatory password change (e.g., for super admin first login)
         if current_user.must_change_password:
-            # For mandatory password changes, skip current password verification
-            logger.info(f"Processing mandatory password change for user {current_user.email}")
+            logger.info(f"🔄 Processing mandatory password change for user {current_user.email}")
+            # For mandatory password changes, confirm_password is required if provided
+            if password_data.confirm_password is not None and password_data.new_password != password_data.confirm_password:
+                logger.error(f"❌ Password confirmation mismatch for mandatory password change")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="New passwords do not match"
+                )
         else:
+            logger.info(f"🔄 Processing normal password change for user {current_user.email}")
             # For normal password changes, require and verify current password
             if not password_data.current_password:
+                logger.error(f"❌ Current password not provided for normal password change")
                 # Log failed password change attempt
                 AuditLogger.log_password_reset(
                     db=db,
@@ -61,6 +72,7 @@ async def change_password(
                 )
             
             if not verify_password(password_data.current_password, current_user.hashed_password):
+                logger.error(f"❌ Current password verification failed for user {current_user.email}")
                 # Log failed password change attempt
                 AuditLogger.log_password_reset(
                     db=db,
@@ -79,6 +91,16 @@ async def change_password(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Current password is incorrect"
                 )
+            
+            # For normal password changes, validate confirm_password if provided
+            if password_data.confirm_password is not None and password_data.new_password != password_data.confirm_password:
+                logger.error(f"❌ Password confirmation mismatch for normal password change")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="New passwords do not match"
+                )
+        
+        logger.info(f"✅ Password validation successful, updating password for user {current_user.email}")
         
         # Update password
         current_user.hashed_password = get_password_hash(password_data.new_password)
@@ -104,13 +126,14 @@ async def change_password(
             reset_type="SELF_PASSWORD_CHANGE"
         )
         
-        logger.info(f"Password changed for user {current_user.email}")
+        logger.info(f"🎉 Password changed successfully for user {current_user.email}")
         return PasswordChangeResponse(message="Password changed successfully")
         
-    except HTTPException:
-        raise
+    except HTTPException as he:
+        logger.error(f"❌ HTTP Exception during password change: {he.detail}")
+        raise he
     except Exception as e:
-        logger.error(f"Password change error: {e}")
+        logger.error(f"💥 Unexpected error during password change for user {current_user.email}: {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
