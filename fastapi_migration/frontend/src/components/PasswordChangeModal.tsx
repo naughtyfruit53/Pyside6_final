@@ -62,42 +62,83 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   };
 
   const onSubmit = async (data: PasswordFormData) => {
-    console.log('Submitted form data:', data);  // Debug the data before sending
+    console.log('🚀 PasswordChangeModal.onSubmit called');
+    console.log('📝 Form data received:', {
+      hasNewPassword: !!data.new_password,
+      hasConfirmPassword: !!data.confirm_password,
+      hasCurrentPassword: !!data.current_password,
+      isRequired: isRequired,
+      passwordsMatch: data.new_password === data.confirm_password
+    });
+    
+    // Validation checks with detailed logging
     if (!data.new_password || !data.confirm_password) {
+      const missingFields = [];
+      if (!data.new_password) missingFields.push('new_password');
+      if (!data.confirm_password) missingFields.push('confirm_password');
+      
+      console.error('❌ Validation failed - missing required fields:', missingFields);
       setError('New password and confirmation are required');
       return;
     }
 
     if (data.new_password !== data.confirm_password) {
+      console.error('❌ Validation failed - passwords do not match');
       setError('New passwords do not match');
       return;
     }
 
     if (!isRequired && !data.current_password) {
+      console.error('❌ Validation failed - current password required for normal password change');
       setError('Current password is required');
       return;
     }
 
+    console.log('✅ Validation passed, proceeding with password change request');
     setLoading(true);
     setError(null);
 
     try {
-      await passwordService.changePassword(isRequired ? null : data.current_password, data.new_password);
+      console.log('🔄 Calling passwordService.changePassword with parameters:', {
+        currentPassword: isRequired ? 'null (mandatory change)' : 'provided',
+        newPassword: 'provided',
+        confirmPassword: 'provided',
+        isRequired: isRequired
+      });
+      
+      await passwordService.changePassword(
+        isRequired ? null : data.current_password, 
+        data.new_password,
+        data.confirm_password  // Always send confirm_password now
+      );
+      
+      console.log('🎉 Password change successful!');
       setSuccess(true);
+      
       if (onSuccess) {
+        console.log('📞 Calling onSuccess callback');
         onSuccess();
       }
+      
       if (!isRequired) {
+        console.log('⏰ Setting auto-close timer for non-mandatory change');
         setTimeout(() => {
           handleClose();
         }, 2000);
+      } else {
+        console.log('✋ Not auto-closing due to mandatory change requirement');
       }
     } catch (err: any) {
       // Enhanced error handling to extract backend detail and handle objects/arrays
       let errorMessage = 'Failed to change password';
       
       // Log the full error for debugging
-      console.error('Password change error:', err);
+      console.error('💥 Password change error details:', {
+        error: err,
+        response: err.response?.data,
+        status: err.response?.status,
+        message: err.message
+      });
       
       // Try to extract from various error structures
       const detail = err.response?.data?.detail;
@@ -105,23 +146,31 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       
       if (typeof detail === 'string' && detail) {
         errorMessage = detail;
+        console.log('📋 Using detail from response:', detail);
       } else if (typeof message === 'string' && message) {
         errorMessage = message;
+        console.log('📋 Using message from response:', message);
       } else if (Array.isArray(detail) && detail.length > 0) {
         // Handle Pydantic validation errors
         const messages = detail.map(e => e.msg || `${e.loc?.join(' -> ')}: ${e.type}`).filter(Boolean);
         errorMessage = messages.length > 0 ? messages.join(', ') : 'Validation error';
+        console.log('📋 Using Pydantic validation errors:', messages);
       } else if (detail && typeof detail === 'object') {
         // Handle object error details
         errorMessage = detail.error || detail.message || 'Invalid request format';
+        console.log('📋 Using object detail:', detail);
       } else if (typeof err.message === 'string' && err.message && !err.message.includes('[object Object]')) {
         errorMessage = err.message;
+        console.log('📋 Using error message:', err.message);
       } else if (err.status === 422) {
         errorMessage = 'Invalid request. Please check your input fields.';
+        console.log('📋 Using default 422 error message');
       }
       
+      console.error('🚨 Final error message for user:', errorMessage);
       setError(errorMessage);
     } finally {
+      console.log('🔚 Password change request completed, setting loading to false');
       setLoading(false);
     }
   };
@@ -247,7 +296,17 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         )}
         {!success && passwordChangeEnabled && (
           <Button
-            onClick={handleSubmit(onSubmit)}
+            onClick={() => {
+              console.log('🖱️ Change Password button clicked');
+              console.log('📊 Button state:', {
+                loading: loading,
+                disabled: loading,
+                passwordChangeEnabled: passwordChangeEnabled,
+                isRequired: isRequired,
+                success: success
+              });
+              handleSubmit(onSubmit)();
+            }}
             variant="contained"
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : null}

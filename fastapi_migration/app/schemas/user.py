@@ -139,12 +139,19 @@ class PlatformUserInDB(PlatformUserBase):
 class PasswordChangeRequest(BaseModel):
     current_password: Optional[str] = Field(None, description="Current password for verification")
     new_password: str = Field(..., description="New password to set")
+    confirm_password: Optional[str] = Field(None, description="Confirm new password")
     
     @field_validator('new_password')
     def validate_password(cls, v):
         is_strong, msg = check_password_strength(v)
         if not is_strong:
             raise ValueError(msg)
+        return v
+    
+    @field_validator('confirm_password')
+    def validate_password_match(cls, v, info):
+        if 'new_password' in info.data and v != info.data['new_password']:
+            raise ValueError('Passwords do not match')
         return v
     
     model_config = ConfigDict(populate_by_name = True)
