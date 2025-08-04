@@ -23,7 +23,7 @@ interface PasswordChangeModalProps {
 }
 
 interface PasswordFormData {
-  current_password: string;
+  current_password?: string;
   new_password: string;
   confirm_password: string;
 }
@@ -63,8 +63,8 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
 
   const onSubmit = async (data: PasswordFormData) => {
     console.log('Submitted form data:', data);  // Debug the data before sending
-    if (!data.current_password || !data.new_password || !data.confirm_password) {
-      setError('All fields are required');
+    if (!data.new_password || !data.confirm_password) {
+      setError('New password and confirmation are required');
       return;
     }
 
@@ -73,11 +73,16 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       return;
     }
 
+    if (!isRequired && !data.current_password) {
+      setError('Current password is required');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      await passwordService.changePassword(data.current_password, data.new_password);
+      await passwordService.changePassword(isRequired ? null : data.current_password, data.new_password);
       setSuccess(true);
       if (onSuccess) {
         onSuccess();
@@ -165,18 +170,20 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
 
           {!success && passwordChangeEnabled && (
             <form onSubmit={handleSubmit(onSubmit)}>
-              <TextField
-                fullWidth
-                label="Current Password"
-                type="password"
-                margin="normal"
-                {...register('current_password', {
-                  required: 'Current password is required'
-                })}
-                error={!!errors.current_password}
-                helperText={errors.current_password?.message}
-                disabled={loading}
-              />
+              {!isRequired && (
+                <TextField
+                  fullWidth
+                  label="Current Password"
+                  type="password"
+                  margin="normal"
+                  {...register('current_password', {
+                    required: 'Current password is required'
+                  })}
+                  error={!!errors.current_password}
+                  helperText={errors.current_password?.message}
+                  disabled={loading}
+                />
+              )}
 
               <TextField
                 fullWidth

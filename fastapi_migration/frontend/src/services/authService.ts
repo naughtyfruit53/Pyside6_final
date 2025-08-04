@@ -503,12 +503,15 @@ export const organizationService = {
 };
 
 export const passwordService = {
-  changePassword: async (currentPassword: string, newPassword: string) => {
+  changePassword: async (currentPassword: string | null, newPassword: string) => {
     try {
-      const response = await api.post('/auth/password/change', {
-        current_password: currentPassword,
+      const payload: { new_password: string; current_password?: string } = {
         new_password: newPassword
-      });
+      };
+      if (currentPassword) {
+        payload.current_password = currentPassword;
+      }
+      const response = await api.post('/auth/password/change', payload);
       return response.data;
     } catch (error: any) {
       throw new Error(error.userMessage || 'Failed to change password');

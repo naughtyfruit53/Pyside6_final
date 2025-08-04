@@ -22,7 +22,11 @@ fastapi_migration/
 │   │   │   │   ├── admin.py
 │   │   │   ├── v1/
 │   │   │   │   ├── admin.py
+│   │   │   │   ├── admin_setup.py
 │   │   │   │   ├── auth.py
+│   │   │   │   ├── login.py
+│   │   │   │   ├── master_auth.py
+│   │   │   │   ├── otp.py
 │   │   │   │   ├── password.py
 │   │   │   │   ├── reset.py
 │   │   │   │   ├── user.py

@@ -112,7 +112,7 @@ class PlatformUserCreate(PlatformUserBase):
     def validate_password(cls, v):
         is_strong, msg = check_password_strength(v)
         if not is_strong:
-            raise ValueValue(msg)
+            raise ValueError(msg)
         return v
 
 
@@ -137,7 +137,7 @@ class PlatformUserInDB(PlatformUserBase):
 
 # Password management schemas
 class PasswordChangeRequest(BaseModel):
-    current_password: str = Field(..., description="Current password for verification")
+    current_password: Optional[str] = Field(None, description="Current password for verification")
     new_password: str = Field(..., description="New password to set")
     
     @field_validator('new_password')

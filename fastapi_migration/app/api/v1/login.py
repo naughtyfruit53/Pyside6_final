@@ -33,14 +33,16 @@ async def login_for_access_token(
     
     # Extract organization information from request headers
     organization_context = get_organization_from_request(request)
+    organization_id = organization_context.organization_id if organization_context else None
+    organization_name = organization_context.organization_name if organization_context else None
     
     try:
         # Try to find user by username first, then by email if username fails
-        user = UserService.get_user_by_username(db, form_data.username, organization_context.organization_id)
+        user = UserService.get_user_by_username(db, form_data.username, organization_id)
         lookup_method = "username"
         
         if not user:
-            user = UserService.get_user_by_email(db, form_data.username, organization_context.organization_id)
+            user = UserService.get_user_by_email(db, form_data.username, organization_id)
             lookup_method = "email"
         
         # Account lockout check (even if user doesn't exist, to prevent enumeration)
@@ -50,7 +52,7 @@ async def login_for_access_token(
                 db=db,
                 email=user.email if user else form_data.username,
                 success=False,
-                organization_id=user.organization_id if user else organization_context.organization_id,
+                organization_id=user.organization_id if user else organization_id,
                 user_id=user.id if user else None,
                 user_role=user.role if user else None,
                 ip_address=get_client_ip(request),
@@ -77,7 +79,7 @@ async def login_for_access_token(
                 db=db,
                 email=user.email if user else form_data.username,
                 success=False,
-                organization_id=user.organization_id if user else organization_context.organization_id,
+                organization_id=user.organization_id if user else organization_id,
                 user_id=user.id if user else None,
                 user_role=user.role if user else None,
                 ip_address=get_client_ip(request),
@@ -119,7 +121,7 @@ async def login_for_access_token(
             )
         
         # Organization validation
-        if organization_context.organization_id and user.organization_id != organization_context.organization_id:
+        if organization_id and user.organization_id != organization_id:
             AuditLogger.log_login_attempt(
                 db=db,
                 email=user.email,
@@ -132,7 +134,7 @@ async def login_for_access_token(
                 details={
                     "reason": "organization_mismatch",
                     "lookup_method": lookup_method,
-                    "expected_org": organization_context.organization_id,
+                    "expected_org": organization_id,
                     "user_org": user.organization_id
                 }
             )
@@ -147,7 +149,8 @@ async def login_for_access_token(
         # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.username, "email": user.email, "organization_id": user.organization_id},
+            subject=user.email,
+            organization_id=user.organization_id,
             expires_delta=access_token_expires
         )
         
@@ -163,7 +166,7 @@ async def login_for_access_token(
             user_agent=get_user_agent(request),
             details={
                 "lookup_method": lookup_method,
-                "organization_name": organization_context.organization_name
+                "organization_name": organization_name
             }
         )
         
@@ -199,10 +202,12 @@ async def login_with_email(
     
     # Extract organization information from request headers
     organization_context = get_organization_from_request(request)
+    organization_id = organization_context.organization_id if organization_context else None
+    organization_name = organization_context.organization_name if organization_context else None
     
     try:
         # Find user by email
-        user = UserService.get_user_by_email(db, user_login.email, organization_context.organization_id)
+        user = UserService.get_user_by_email(db, user_login.email, organization_id)
         
         # Account lockout check
         if user and UserService.is_account_locked(user):
@@ -211,7 +216,7 @@ async def login_with_email(
                 db=db,
                 email=user_login.email,
                 success=False,
-                organization_id=user.organization_id if user else organization_context.organization_id,
+                organization_id=user.organization_id if user else organization_id,
                 user_id=user.id if user else None,
                 user_role=user.role if user else None,
                 ip_address=get_client_ip(request),
@@ -238,7 +243,7 @@ async def login_with_email(
                 db=db,
                 email=user_login.email,
                 success=False,
-                organization_id=user.organization_id if user else organization_context.organization_id,
+                organization_id=user.organization_id if user else organization_id,
                 user_id=user.id if user else None,
                 user_role=user.role if user else None,
                 ip_address=get_client_ip(request),
@@ -279,7 +284,7 @@ async def login_with_email(
             )
         
         # Organization validation
-        if organization_context.organization_id and user.organization_id != organization_context.organization_id:
+        if organization_id and user.organization_id != organization_id:
             AuditLogger.log_login_attempt(
                 db=db,
                 email=user.email,
@@ -292,7 +297,7 @@ async def login_with_email(
                 details={
                     "reason": "organization_mismatch",
                     "lookup_method": "email",
-                    "expected_org": organization_context.organization_id,
+                    "expected_org": organization_id,
                     "user_org": user.organization_id
                 }
             )
@@ -307,7 +312,8 @@ async def login_with_email(
         # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.username, "email": user.email, "organization_id": user.organization_id},
+            subject=user.email,
+            organization_id=user.organization_id,
             expires_delta=access_token_expires
         )
         
@@ -323,7 +329,7 @@ async def login_with_email(
             user_agent=get_user_agent(request),
             details={
                 "lookup_method": "email",
-                "organization_name": organization_context.organization_name
+                "organization_name": organization_name
             }
         )
         

@@ -2,9 +2,10 @@
 User authentication dependencies and utilities
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, Union
 
 from app.core.database import get_db
 from app.core.security import verify_token
@@ -12,11 +13,14 @@ from app.core.tenant import TenantContext
 from app.models.base import User, Organization, PlatformUser
 from app.schemas.user import UserRole, UserInDB
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
 router = APIRouter(prefix="/users")
 
 
 async def get_current_user(
-    token: str,
+    token: Optional[str] = Depends(oauth2_scheme),
+    header_organization_id: Optional[int] = Header(None, alias="X-Organization-ID"),
     db: Session = Depends(get_db)
 ) -> User:
     """Get current user from JWT token with enhanced organization validation"""
@@ -25,15 +29,25 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     try:
-        email, organization_id, user_type = verify_token(token)
+        email, token_org_id, user_type = verify_token(token)
         if email is None:
             raise credentials_exception
             
+        # Use header if provided (for platform users), else token org_id
+        effective_org_id = header_organization_id if header_organization_id is not None else token_org_id
+            
         # Set organization context if available
-        if organization_id:
-            TenantContext.set_organization_id(organization_id)
+        if effective_org_id is not None:
+            TenantContext.set_organization_id(effective_org_id)
             
     except Exception:
         raise credentials_exception
@@ -45,7 +59,7 @@ async def get_current_user(
         if platform_user is None:
             raise credentials_exception
         
-        # Convert to User object for compatibility (platform users have no organization)
+        # Convert to User object for compatibility (platform users don't belong to any organization)
         user = User(
             id=platform_user.id,
             email=platform_user.email,
@@ -66,10 +80,10 @@ async def get_current_user(
         
     else:
         # Organization user (including super admins stored as User with organization_id=None)
-        if organization_id:
+        if effective_org_id is not None:
             user = db.query(User).filter(
                 User.email == email,
-                User.organization_id == organization_id
+                User.organization_id == effective_org_id
             ).first()
         else:
             # Handle super admin case (organization_id=None)
@@ -80,6 +94,13 @@ async def get_current_user(
         
         if user is None:
             raise credentials_exception
+        
+        # For organization users, validate if header was provided, it must match
+        if header_organization_id is not None and user.organization_id != header_organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organization ID mismatch"
+            )
         
         user.is_platform_user = user.is_super_admin  # Treat super admins as platform users for permissions
      
@@ -158,7 +179,7 @@ def require_current_organization_id(current_user: User = Depends(get_current_act
     if org_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Organization context is required for this operation"
+            detail="No organization context is required for this operation"
         )
     
     return org_id
