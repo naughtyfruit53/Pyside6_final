@@ -503,17 +503,37 @@ export const organizationService = {
 };
 
 export const passwordService = {
-  changePassword: async (currentPassword: string | null, newPassword: string) => {
+  changePassword: async (currentPassword: string | null, newPassword: string, confirmPassword?: string) => {
     try {
-      const payload: { new_password: string; current_password?: string } = {
+      console.log('🔐 passwordService.changePassword called with:', {
+        currentPassword: currentPassword ? 'PROVIDED' : 'NOT_PROVIDED',
+        newPassword: 'PROVIDED',
+        confirmPassword: confirmPassword ? 'PROVIDED' : 'NOT_PROVIDED'
+      });
+      
+      const payload: { new_password: string; current_password?: string; confirm_password?: string } = {
         new_password: newPassword
       };
+      
       if (currentPassword) {
         payload.current_password = currentPassword;
       }
+      
+      if (confirmPassword) {
+        payload.confirm_password = confirmPassword;
+      }
+      
+      console.log('📤 Sending password change request with payload structure:', {
+        has_new_password: !!payload.new_password,
+        has_current_password: !!payload.current_password,
+        has_confirm_password: !!payload.confirm_password
+      });
+      
       const response = await api.post('/auth/password/change', payload);
+      console.log('✅ Password change request successful:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('❌ Password change request failed:', error);
       throw new Error(error.userMessage || 'Failed to change password');
     }
   },

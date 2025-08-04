@@ -14,20 +14,17 @@ import {
 import { useForm } from 'react-hook-form';
 import { passwordService } from '../services/authService';
 import { getFeatureFlag } from '../utils/config';
-
 interface PasswordChangeModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   isRequired?: boolean; // For mandatory password changes
 }
-
 interface PasswordFormData {
   current_password?: string;
   new_password: string;
   confirm_password: string;
 }
-
 const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   open,
   onClose,
@@ -37,10 +34,10 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
+ 
   // Check if password change functionality is enabled
   const passwordChangeEnabled = getFeatureFlag('passwordChange');
-  
+ 
   const {
     register,
     handleSubmit,
@@ -49,9 +46,7 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
     watch,
     getValues
   } = useForm<PasswordFormData>();
-
   const new_password = watch('new_password');
-
   const handleClose = () => {
     if (!isRequired || success) {
       reset();
@@ -60,7 +55,6 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       onClose();
     }
   };
-
   const onSubmit = async (data: PasswordFormData) => {
     console.log('🔐 Starting password change submission');
     console.log('📝 Form submission data:', {
@@ -69,60 +63,68 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       hasConfirmPassword: !!data.confirm_password,
       isRequiredChange: isRequired
     });
-    
+   
     // Client-side validation
     if (!data.new_password || !data.confirm_password) {
-      console.error('❌ Validation failed: New password and confirmation are required');
+      const missingFields = [];
+      if (!data.new_password) missingFields.push('new_password');
+      if (!data.confirm_password) missingFields.push('confirm_password');
+     
+      console.error('❌ Validation failed - missing required fields:', missingFields);
       setError('New password and confirmation are required');
       return;
     }
-
     if (data.new_password !== data.confirm_password) {
       console.error('❌ Validation failed: New passwords do not match');
       setError('New passwords do not match');
       return;
     }
-
     if (!isRequired && !data.current_password) {
       console.error('❌ Validation failed: Current password is required for normal users');
       setError('Current password is required');
       return;
     }
-
     console.log('✅ Client-side validation passed');
     setLoading(true);
     setError(null);
-
     try {
       console.log(`🚀 Calling password service - isRequired: ${isRequired}`);
-      await passwordService.changePassword(isRequired ? null : data.current_password, data.new_password);
+      await passwordService.changePassword(
+        isRequired ? null : data.current_password,
+        data.new_password,
+        data.confirm_password // Always send confirm_password now
+      );
       console.log('🎉 Password change successful!');
       setSuccess(true);
+     
       if (onSuccess) {
         console.log('📞 Calling onSuccess callback');
         onSuccess();
       }
+     
       if (!isRequired) {
         console.log('⏰ Auto-closing modal in 2 seconds');
         setTimeout(() => {
           handleClose();
         }, 2000);
+      } else {
+        console.log('✋ Not auto-closing due to mandatory change requirement');
       }
     } catch (err: any) {
       console.error('💥 Password change failed:', err);
-      
+     
       // Enhanced error handling to extract backend detail and handle objects/arrays
       let errorMessage = 'Failed to change password';
-      
+     
       // Log the full error structure for debugging
       console.error('🔍 Full error object:', err);
       console.error('🔍 Error response:', err.response);
       console.error('🔍 Error response data:', err.response?.data);
-      
+     
       // Try to extract from various error structures
       const detail = err.response?.data?.detail;
       const message = err.response?.data?.message;
-      
+     
       console.log('📊 Error analysis:', {
         hasDetail: !!detail,
         detailType: typeof detail,
@@ -130,13 +132,15 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         messageType: typeof message,
         statusCode: err.response?.status
       });
-      
+     
       if (typeof detail === 'string' && detail) {
         console.log('✅ Using string detail as error message');
         errorMessage = detail;
+        console.log('📋 Using detail from response:', detail);
       } else if (typeof message === 'string' && message) {
         console.log('✅ Using string message as error message');
         errorMessage = message;
+        console.log('📋 Using message from response:', message);
       } else if (Array.isArray(detail) && detail.length > 0) {
         console.log('🔄 Processing validation error array');
         // Handle Pydantic validation errors
@@ -147,14 +151,17 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         console.log('🔄 Processing object detail');
         // Handle object error details
         errorMessage = detail.error || detail.message || 'Invalid request format';
+        console.log('📋 Using object detail:', detail);
       } else if (typeof err.message === 'string' && err.message && !err.message.includes('[object Object]')) {
         console.log('✅ Using error.message as fallback');
         errorMessage = err.message;
+        console.log('📋 Using error message:', err.message);
       } else if (err.status === 422) {
         console.log('⚠️ Using default message for 422 error');
         errorMessage = 'Invalid request. Please check your input fields.';
+        console.log('📋 Using default 422 error message');
       }
-      
+     
       console.error('❌ Final error message to display:', errorMessage);
       setError(errorMessage);
     } finally {
@@ -162,12 +169,11 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       setLoading(false);
     }
   };
-
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="sm" 
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
       fullWidth
       disableEscapeKeyDown={isRequired && !success}
     >
@@ -181,19 +187,17 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               You are required to change your password before continuing.
             </Alert>
           )}
-
           {!passwordChangeEnabled && (
             <Alert severity="info" sx={{ mb: 2 }}>
               Password change functionality is temporarily disabled. Please contact your administrator.
             </Alert>
           )}
-
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
-          
+         
           {success && (
             <Alert severity="success" sx={{ mb: 2 }}>
               Password changed successfully!
@@ -204,7 +208,6 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               )}
             </Alert>
           )}
-
           {!success && passwordChangeEnabled && (
             <form onSubmit={handleSubmit(onSubmit)}>
               {!isRequired && (
@@ -221,7 +224,6 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                   disabled={loading}
                 />
               )}
-
               <TextField
                 fullWidth
                 label="New Password"
@@ -242,7 +244,6 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 helperText={errors.new_password?.message}
                 disabled={loading}
               />
-
               <TextField
                 fullWidth
                 label="Confirm New Password"
@@ -260,10 +261,9 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 helperText={errors.confirm_password?.message}
                 disabled={loading}
               />
-
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Password must be at least 8 characters long and contain at least one uppercase letter, 
+                  Password must be at least 8 characters long and contain at least one uppercase letter,
                   one lowercase letter, one number, and one special character (@$!%*?&).
                 </Typography>
               </Box>
@@ -309,5 +309,4 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
     </Dialog>
   );
 };
-
 export default PasswordChangeModal;
