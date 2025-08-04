@@ -44,8 +44,16 @@ class Settings(BaseSettings):
     UPLOAD_FOLDER: str = "uploads"
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     
-    # Cors
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    # Cors - Enhanced to include common frontend development ports
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000", 
+        "http://localhost:8080", 
+        "http://localhost:5173",  # Vite dev server
+        "http://localhost:3001",  # Alternative Next.js port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:5173"
+    ]
     
     # Super Admin Configuration
     SUPER_ADMIN_EMAILS: List[str] = ["admin@tritiq.com", "superadmin@tritiq.com", "naughtyfruit53@gmail.com"]

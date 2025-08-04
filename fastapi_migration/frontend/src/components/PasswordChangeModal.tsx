@@ -62,66 +62,103 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   };
 
   const onSubmit = async (data: PasswordFormData) => {
-    console.log('Submitted form data:', data);  // Debug the data before sending
+    console.log('🔐 Starting password change submission');
+    console.log('📝 Form submission data:', {
+      hasCurrentPassword: !!data.current_password,
+      hasNewPassword: !!data.new_password,
+      hasConfirmPassword: !!data.confirm_password,
+      isRequiredChange: isRequired
+    });
+    
+    // Client-side validation
     if (!data.new_password || !data.confirm_password) {
+      console.error('❌ Validation failed: New password and confirmation are required');
       setError('New password and confirmation are required');
       return;
     }
 
     if (data.new_password !== data.confirm_password) {
+      console.error('❌ Validation failed: New passwords do not match');
       setError('New passwords do not match');
       return;
     }
 
     if (!isRequired && !data.current_password) {
+      console.error('❌ Validation failed: Current password is required for normal users');
       setError('Current password is required');
       return;
     }
 
+    console.log('✅ Client-side validation passed');
     setLoading(true);
     setError(null);
 
     try {
+      console.log(`🚀 Calling password service - isRequired: ${isRequired}`);
       await passwordService.changePassword(isRequired ? null : data.current_password, data.new_password);
+      console.log('🎉 Password change successful!');
       setSuccess(true);
       if (onSuccess) {
+        console.log('📞 Calling onSuccess callback');
         onSuccess();
       }
       if (!isRequired) {
+        console.log('⏰ Auto-closing modal in 2 seconds');
         setTimeout(() => {
           handleClose();
         }, 2000);
       }
     } catch (err: any) {
+      console.error('💥 Password change failed:', err);
+      
       // Enhanced error handling to extract backend detail and handle objects/arrays
       let errorMessage = 'Failed to change password';
       
-      // Log the full error for debugging
-      console.error('Password change error:', err);
+      // Log the full error structure for debugging
+      console.error('🔍 Full error object:', err);
+      console.error('🔍 Error response:', err.response);
+      console.error('🔍 Error response data:', err.response?.data);
       
       // Try to extract from various error structures
       const detail = err.response?.data?.detail;
       const message = err.response?.data?.message;
       
+      console.log('📊 Error analysis:', {
+        hasDetail: !!detail,
+        detailType: typeof detail,
+        hasMessage: !!message,
+        messageType: typeof message,
+        statusCode: err.response?.status
+      });
+      
       if (typeof detail === 'string' && detail) {
+        console.log('✅ Using string detail as error message');
         errorMessage = detail;
       } else if (typeof message === 'string' && message) {
+        console.log('✅ Using string message as error message');
         errorMessage = message;
       } else if (Array.isArray(detail) && detail.length > 0) {
+        console.log('🔄 Processing validation error array');
         // Handle Pydantic validation errors
         const messages = detail.map(e => e.msg || `${e.loc?.join(' -> ')}: ${e.type}`).filter(Boolean);
         errorMessage = messages.length > 0 ? messages.join(', ') : 'Validation error';
+        console.log('📝 Processed validation messages:', messages);
       } else if (detail && typeof detail === 'object') {
+        console.log('🔄 Processing object detail');
         // Handle object error details
         errorMessage = detail.error || detail.message || 'Invalid request format';
       } else if (typeof err.message === 'string' && err.message && !err.message.includes('[object Object]')) {
+        console.log('✅ Using error.message as fallback');
         errorMessage = err.message;
       } else if (err.status === 422) {
+        console.log('⚠️ Using default message for 422 error');
         errorMessage = 'Invalid request. Please check your input fields.';
       }
       
+      console.error('❌ Final error message to display:', errorMessage);
       setError(errorMessage);
     } finally {
+      console.log('🔄 Setting loading to false');
       setLoading(false);
     }
   };
@@ -247,7 +284,11 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         )}
         {!success && passwordChangeEnabled && (
           <Button
-            onClick={handleSubmit(onSubmit)}
+            onClick={(e) => {
+              console.log('🖱️ Change Password button clicked');
+              console.log('🔍 Button state:', { loading, success, passwordChangeEnabled });
+              handleSubmit(onSubmit)(e);
+            }}
             variant="contained"
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : null}

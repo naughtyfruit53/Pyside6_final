@@ -32,15 +32,30 @@ async def change_password(
     db: Session = Depends(get_db)
 ):
     """Change user password with audit logging"""
-    logger.info(f"Received password change request for user {current_user.email} with payload: {password_data.dict()}")
+    client_ip = get_client_ip(request)
+    user_agent = get_user_agent(request)
+    
+    # Enhanced request logging (without exposing password)
+    logger.info(f"🔐 Password change request from user {current_user.email} "
+                f"(ID: {current_user.id}, Role: {current_user.role}) "
+                f"from IP: {client_ip}")
+    logger.info(f"🔍 User must_change_password: {current_user.must_change_password}, "
+                f"force_password_reset: {current_user.force_password_reset}")
+    logger.info(f"📝 Request has current_password: {bool(password_data.current_password)}")
+    
     try:
         # Handle mandatory password change (e.g., for super admin first login)
         if current_user.must_change_password:
             # For mandatory password changes, skip current password verification
-            logger.info(f"Processing mandatory password change for user {current_user.email}")
+            logger.info(f"✅ Processing mandatory password change for user {current_user.email} "
+                       f"(super admin or force reset scenario)")
         else:
             # For normal password changes, require and verify current password
+            logger.info(f"🔒 Processing normal password change for user {current_user.email}")
+            
             if not password_data.current_password:
+                logger.error(f"❌ Password change failed for {current_user.email}: "
+                           f"Current password is required for normal users")
                 # Log failed password change attempt
                 AuditLogger.log_password_reset(
                     db=db,
@@ -50,8 +65,8 @@ async def change_password(
                     target_user_id=current_user.id,
                     organization_id=current_user.organization_id,
                     success=False,
-                    ip_address=get_client_ip(request),
-                    user_agent=get_user_agent(request),
+                    ip_address=client_ip,
+                    user_agent=user_agent,
                     error_message="Current password is required for normal password change",
                     reset_type="SELF_PASSWORD_CHANGE"
                 )
@@ -61,6 +76,8 @@ async def change_password(
                 )
             
             if not verify_password(password_data.current_password, current_user.hashed_password):
+                logger.error(f"❌ Password change failed for {current_user.email}: "
+                           f"Incorrect current password provided from IP: {client_ip}")
                 # Log failed password change attempt
                 AuditLogger.log_password_reset(
                     db=db,
@@ -70,8 +87,8 @@ async def change_password(
                     target_user_id=current_user.id,
                     organization_id=current_user.organization_id,
                     success=False,
-                    ip_address=get_client_ip(request),
-                    user_agent=get_user_agent(request),
+                    ip_address=client_ip,
+                    user_agent=user_agent,
                     error_message="Current password is incorrect",
                     reset_type="SELF_PASSWORD_CHANGE"
                 )
@@ -81,6 +98,7 @@ async def change_password(
                 )
         
         # Update password
+        logger.info(f"🔄 Updating password for user {current_user.email}")
         current_user.hashed_password = get_password_hash(password_data.new_password)
         current_user.must_change_password = False
         current_user.force_password_reset = False
@@ -89,6 +107,7 @@ async def change_password(
         UserService.clear_temporary_password(db, current_user)
         
         db.commit()
+        logger.info(f"✅ Password successfully updated and flags cleared for user {current_user.email}")
         
         # Log successful password change
         AuditLogger.log_password_reset(
@@ -99,19 +118,38 @@ async def change_password(
             target_user_id=current_user.id,
             organization_id=current_user.organization_id,
             success=True,
-            ip_address=get_client_ip(request),
-            user_agent=get_user_agent(request),
+            ip_address=client_ip,
+            user_agent=user_agent,
             reset_type="SELF_PASSWORD_CHANGE"
         )
         
-        logger.info(f"Password changed for user {current_user.email}")
+        logger.info(f"🎉 Password change completed successfully for user {current_user.email}")
         return PasswordChangeResponse(message="Password changed successfully")
         
     except HTTPException:
+        # Re-raise HTTP exceptions as they are already properly formatted
         raise
     except Exception as e:
-        logger.error(f"Password change error: {e}")
+        logger.error(f"💥 Unexpected error during password change for user {current_user.email}: "
+                    f"{type(e).__name__}: {str(e)}")
+        logger.error(f"🔍 Error details - IP: {client_ip}, User-Agent: {user_agent}")
         db.rollback()
+        
+        # Log the unexpected error
+        AuditLogger.log_password_reset(
+            db=db,
+            admin_email=current_user.email,
+            target_email=current_user.email,
+            admin_user_id=current_user.id,
+            target_user_id=current_user.id,
+            organization_id=current_user.organization_id,
+            success=False,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            error_message=f"Unexpected error: {str(e)}",
+            reset_type="SELF_PASSWORD_CHANGE"
+        )
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error changing password"
