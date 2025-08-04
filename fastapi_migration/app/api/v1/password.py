@@ -34,26 +34,51 @@ async def change_password(
     """Change user password with audit logging"""
     logger.info(f"Received password change request for user {current_user.email} with payload: {password_data.dict()}")
     try:
-        # Verify current password
-        if not verify_password(password_data.current_password, current_user.hashed_password):
-            # Log failed password change attempt
-            AuditLogger.log_password_reset(
-                db=db,
-                admin_email=current_user.email,
-                target_email=current_user.email,
-                admin_user_id=current_user.id,
-                target_user_id=current_user.id,
-                organization_id=current_user.organization_id,
-                success=False,
-                ip_address=get_client_ip(request),
-                user_agent=get_user_agent(request),
-                error_message="Current password is incorrect",
-                reset_type="SELF_PASSWORD_CHANGE"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Current password is incorrect"
-            )
+        # Handle mandatory password change (e.g., for super admin first login)
+        if current_user.must_change_password:
+            # For mandatory password changes, skip current password verification
+            logger.info(f"Processing mandatory password change for user {current_user.email}")
+        else:
+            # For normal password changes, require and verify current password
+            if not password_data.current_password:
+                # Log failed password change attempt
+                AuditLogger.log_password_reset(
+                    db=db,
+                    admin_email=current_user.email,
+                    target_email=current_user.email,
+                    admin_user_id=current_user.id,
+                    target_user_id=current_user.id,
+                    organization_id=current_user.organization_id,
+                    success=False,
+                    ip_address=get_client_ip(request),
+                    user_agent=get_user_agent(request),
+                    error_message="Current password is required for normal password change",
+                    reset_type="SELF_PASSWORD_CHANGE"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Current password is required"
+                )
+            
+            if not verify_password(password_data.current_password, current_user.hashed_password):
+                # Log failed password change attempt
+                AuditLogger.log_password_reset(
+                    db=db,
+                    admin_email=current_user.email,
+                    target_email=current_user.email,
+                    admin_user_id=current_user.id,
+                    target_user_id=current_user.id,
+                    organization_id=current_user.organization_id,
+                    success=False,
+                    ip_address=get_client_ip(request),
+                    user_agent=get_user_agent(request),
+                    error_message="Current password is incorrect",
+                    reset_type="SELF_PASSWORD_CHANGE"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Current password is incorrect"
+                )
         
         # Update password
         current_user.hashed_password = get_password_hash(password_data.new_password)
